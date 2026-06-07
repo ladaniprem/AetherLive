@@ -1,19 +1,19 @@
-import { Button } from "@workspace/ui/components/button"
+"use client";
+import {useMutation, useQuery} from 'convex/react';
+import {api} from "@workspace/backend/_generated/api";
+import { Button } from '@workspace/ui/components/button';
 
 export default function Page() {
-    return (
-        <div className="flex min-h-svh p-6">
-            <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-                <div>
-                    <h1 className="font-medium">Widget ready!</h1>
-                    <p>You can start building the widget app here.</p>
-                    <p>We&apos;ve already added the button component for you.</p>
-                    <Button className="mt-2">Button</Button>
-                </div>
-                <div className="text-muted-foreground font-mono text-xs">
-                    (Press <kbd>d</kbd> to toggle dark mode)
-                </div>
-            </div>
+  const users = useQuery(api.users.getMany);
+  const addUser = useMutation(api.users.add);
+  return (
+        <div className="flex flex-col items-center justify-center h-screen">
+        <p>apps/widget</p>
+        <Button onClick={() => addUser()}>Add User</Button>
+        <div className="max-w-sm w-full mx-auto">
+        {JSON.stringify(users,null,2)}
         </div>
-    )
+        </div>
+  )
+
 }
