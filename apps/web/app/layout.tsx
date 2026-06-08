@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google"
 import "@workspace/ui/globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@workspace/ui/lib/utils";
+import { ClerkProvider } from '@clerk/nextjs'
+// import ConvexClientProvider from '@/components/ConvexClientProvider'
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' })
 
@@ -23,7 +25,11 @@ export default function RootLayout({
       className={cn("antialiased", fontMono.variable, "font-sans", geist.variable)}
     >
       <body suppressHydrationWarning>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ClerkProvider>
+          {/* <ConvexClientProvider> */}
+            <ThemeProvider>{children}</ThemeProvider>
+          {/* </ConvexClientProvider> */}
+        </ClerkProvider>
       </body>
     </html>
   )
