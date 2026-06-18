@@ -34,12 +34,44 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# ============================================================
+# Secret & environment files — NEVER commit these
+# ============================================================
 
-# vercel
+# Local env files (contain API keys, secrets, DSNs)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Sentry — contains auth token for source map uploads
+.env.sentry-build-plugin
+
+# Sentry CLI config (may contain auth tokens)
+.sentryclirc
+
+# Allow template/example env files to be committed
+!.env.example
+!.env.*.example
+
+# Certificates & private keys
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+*.jks
+
+# SSH keys
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+
+# Vercel
 .vercel
 
-# typescript
+# TypeScript
 *.tsbuildinfo
 next-env.d.ts
