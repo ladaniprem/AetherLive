@@ -1,0 +1,20 @@
+{
+  "servers": {
+    "shadcn": {
+      "command": "npx",
+      "args": [
+        "shadcn@latest",
+        "mcp"
+      ]
+    },
+    "TestSprite": {
+      "command": "npx",
+      "args": [
+        "@testsprite/testsprite-mcp@latest"
+      ],
+      "env": {
+        "API_KEY": "sk-user-DIASn4UPe-R2oyOD9kFtTHslalXJlg5OtMaAwrZEsXjRRSKsQUNCSaYHAKtEDHex_92PYJJMgdv_Dvm9vAmFR_IOWCpHHmbHe1_Uulb3lrVJWuk-96-bNcCvu7oXclqql7Y"
+      }
+    }
+  }
+}
