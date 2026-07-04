@@ -15,6 +15,7 @@
         "typescript": "latest"
     },
     "dependencies": {
+        "@convex-dev/agent": "^0.6.4",
         "convex": "^1.40.0"
     }
 }
