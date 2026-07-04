@@ -8,6 +8,21 @@
  * @module
  */
 
+import type * as private_contactSessions from "../private/contactSessions.js";
+import type * as private_conversations from "../private/conversations.js";
+import type * as private_files from "../private/files.js";
+import type * as private_messages from "../private/messages.js";
+import type * as private_plugins from "../private/plugins.js";
+import type * as private_secrets from "../private/secrets.js";
+import type * as private_vapi from "../private/vapi.js";
+import type * as private_widgetSettings from "../private/widgetSettings.js";
+import type * as public_contactSessions from "../public/contactSessions.js";
+import type * as public_conversations from "../public/conversations.js";
+import type * as public_messages from "../public/messages.js";
+import type * as public_organizations from "../public/organizations.js";
+import type * as public_plugins from "../public/plugins.js";
+import type * as public_secrets from "../public/secrets.js";
+import type * as public_widgetSettings from "../public/widgetSettings.js";
 import type * as users from "../users.js";
 
 import type {
@@ -17,6 +32,21 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "private/contactSessions": typeof private_contactSessions;
+  "private/conversations": typeof private_conversations;
+  "private/files": typeof private_files;
+  "private/messages": typeof private_messages;
+  "private/plugins": typeof private_plugins;
+  "private/secrets": typeof private_secrets;
+  "private/vapi": typeof private_vapi;
+  "private/widgetSettings": typeof private_widgetSettings;
+  "public/contactSessions": typeof public_contactSessions;
+  "public/conversations": typeof public_conversations;
+  "public/messages": typeof public_messages;
+  "public/organizations": typeof public_organizations;
+  "public/plugins": typeof public_plugins;
+  "public/secrets": typeof public_secrets;
+  "public/widgetSettings": typeof public_widgetSettings;
   users: typeof users;
 }>;
 
