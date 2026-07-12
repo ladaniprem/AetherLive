@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 const DSN = process.env.NEXT_PUBLIC_SENTRY_DSN ?? "";
 
@@ -11,6 +12,24 @@ const DSN = process.env.NEXT_PUBLIC_SENTRY_DSN ?? "";
 export async function POST(req: NextRequest) {
   if (!DSN) {
     return NextResponse.json({ error: "NEXT_PUBLIC_SENTRY_DSN not set" }, { status: 500 });
+  }
+
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || req.headers.get("x-real-ip")
+    || "unknown";
+
+  const { allowed, remaining, resetIn } = checkRateLimit("sentryTunnel", ip);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.ceil(resetIn / 1000)),
+          "X-RateLimit-Remaining": "0",
+        },
+      },
+    );
   }
 
   const dsn = new URL(DSN);
