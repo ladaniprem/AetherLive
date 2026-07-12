@@ -16,7 +16,7 @@ const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL || "");
 
 export function ThemeProvider({ children }: React.ComponentProps<typeof NextThemesProvider>) {
   return (
-    <NextThemesProvider attribute="class" defaultTheme="light" enableSystem themes={["light", "dark"]}>
+    <NextThemesProvider attribute="class" defaultTheme="light" enableSystem={false} themes={["light", "dark"]}>
       <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
         {children}
       </ConvexProviderWithClerk>
