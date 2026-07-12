@@ -58,7 +58,7 @@ AI-native customer support platform. A single `<script>` tag embeds a smart widg
 | Zero-dependency IIFE | No framework required |
 | FAB + iframe | Floating button opens widget panel |
 | PostMessage API | `close`, `resize` handlers |
-| Global API | `EchoWidget.init()`, `.show()`, `.hide()`, `.destroy()` |
+| Global API | `AetherLiveWidget.init()`, `.show()`, `.hide()`, `.destroy()` |
 
 ### Backend (Convex)
 | Feature | Description |
