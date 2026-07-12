@@ -1,4 +1,4 @@
-import { action, mutation } from "../_generated/server";
+import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 
 export const upsert = mutation({
@@ -17,7 +17,7 @@ export const upsert = mutation({
             .filter((q) =>
                 q.and(
                     q.eq(q.field("service"), args.service),
-                    q.eq(q.field("organizationId"), identity.orgId),
+                    q.eq(q.field("organizationId"), identity.orgId as string),
                 ),
             )
             .first();
@@ -29,14 +29,14 @@ export const upsert = mutation({
         } else {
             await ctx.db.insert("secrets", {
                 service: args.service,
-                organizationId: identity.orgId,
+                organizationId: identity.orgId as string,
                 value: args.value,
             });
         }
     },
 });
 
-export const getVapiSecrets = action({
+export const getVapiSecrets = query({
     args: {
         organizationId: v.string(),
     },
