@@ -11,11 +11,12 @@ import {
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { WidgetHeader } from "@/modules/widget/ui/components/widget-header";
-import { useMutation } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
 import { Doc } from "@workspace/backend/_generated/dataModel";
-import { useAtomValue, useSetAtom } from "jotai";
-import { contactSessionIdAtomFamily, organizationIdAtom, screenAtom } from "../../atoms/widget-atoms";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useEffect } from "react";
+import { contactSessionIdAtomFamily, csrfTokenAtom, organizationIdAtom, screenAtom } from "../../atoms/widget-atoms";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -26,9 +27,18 @@ export const WidgetAuthScreen = () => {
   const setScreen = useSetAtom(screenAtom);
 
   const organizationId = useAtomValue(organizationIdAtom);
+  const [csrfToken, setCsrfToken] = useAtom(csrfTokenAtom);
+  const generateCsrfToken = useAction(api.public.csrf.generate);
   const setContactSessionId = useSetAtom(
     contactSessionIdAtomFamily(organizationId || "")
   );
+
+  useEffect(() => {
+    if (!organizationId || csrfToken) return;
+    generateCsrfToken({ organizationId }).then(({ token }) => {
+      setCsrfToken(token);
+    });
+  }, [organizationId, csrfToken, generateCsrfToken, setCsrfToken]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -60,9 +70,12 @@ export const WidgetAuthScreen = () => {
       currentUrl: window.location.href,
     };
 
+    if (!csrfToken) return;
+
     const contactSessionId = await createContactSession({
       ...values,
       organizationId,
+      csrfToken,
       metadata,
     });
 
