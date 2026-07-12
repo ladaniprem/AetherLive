@@ -24,7 +24,7 @@ const schema = defineSchema({
             referrer: v.string(),
             currentUrl: v.string(),
         }),
-    }),
+    }).index("by_organizationId", ["organizationId"]),
     conversations: defineTable({
         status: v.union(
             v.literal("unresolved"),
@@ -33,7 +33,9 @@ const schema = defineSchema({
         ),
         threadId: v.string(),
         contactSessionId: v.id("contactSessions"),
-    }),
+    }).index("by_contactSessionId", ["contactSessionId"])
+        .index("by_status", ["status"])
+        .index("by_contactSessionId_and_threadId", ["contactSessionId", "threadId"]),
     files: defineTable({
         name: v.string(),
         type: v.string(),
@@ -41,7 +43,7 @@ const schema = defineSchema({
         storageId: v.id("_storage"),
         category: v.string(),
         organizationId: v.string(),
-    }),
+    }).index("by_organizationId", ["organizationId"]),
     widgetSettings: defineTable({
         organizationId: v.string(),
         greetMessage: v.string(),
@@ -54,18 +56,29 @@ const schema = defineSchema({
             assistantId: v.optional(v.string()),
             phoneNumber: v.optional(v.string()),
         }),
-    }),
+    }).index("by_organizationId", ["organizationId"]),
     plugins: defineTable({
         service: v.string(),
         organizationId: v.string(),
         enabled: v.boolean(),
         config: v.optional(v.any()),
-    }),
+    }).index("by_service_and_organizationId", ["service", "organizationId"]),
     secrets: defineTable({
         service: v.string(),
         organizationId: v.string(),
         value: v.any(),
-    }),
+    }).index("by_service_and_organizationId", ["service", "organizationId"]),
+    rateLimits: defineTable({
+        key: v.string(),
+        window: v.number(),
+        count: v.number(),
+        expiresAt: v.number(),
+    }).index("by_key_and_window", ["key", "window"]),
+    csrfTokens: defineTable({
+        token: v.string(),
+        organizationId: v.string(),
+        expiresAt: v.number(),
+    }).index("by_token", ["token"]),
 });
 
 export default schema;
