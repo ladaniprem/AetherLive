@@ -17,7 +17,7 @@ export const upsert = mutation({
             .filter((q) =>
                 q.and(
                     q.eq(q.field("service"), args.service),
-                    q.eq(q.field("organizationId"), identity.orgId),
+                    q.eq(q.field("organizationId"), identity.orgId as string),
                 ),
             )
             .first();
@@ -29,7 +29,7 @@ export const upsert = mutation({
         } else {
             await ctx.db.insert("secrets", {
                 service: args.service,
-                organizationId: identity.orgId,
+                organizationId: identity.orgId as string,
                 value: args.value,
             });
         }

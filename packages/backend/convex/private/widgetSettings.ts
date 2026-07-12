@@ -11,7 +11,7 @@ export const getOne = query({
 
         const settings = await ctx.db
             .query("widgetSettings")
-            .filter((q) => q.eq(q.field("organizationId"), identity.orgId))
+            .filter((q) => q.eq(q.field("organizationId"), identity.orgId as string))
             .first();
 
         return settings;
@@ -39,7 +39,7 @@ export const upsert = mutation({
 
         const existing = await ctx.db
             .query("widgetSettings")
-            .filter((q) => q.eq(q.field("organizationId"), identity.orgId))
+            .filter((q) => q.eq(q.field("organizationId"), identity.orgId as string))
             .first();
 
         if (existing) {
@@ -50,7 +50,7 @@ export const upsert = mutation({
             });
         } else {
             await ctx.db.insert("widgetSettings", {
-                organizationId: identity.orgId,
+                organizationId: identity.orgId as string,
                 greetMessage: args.greetMessage,
                 defaultSuggestions: args.defaultSuggestions,
                 vapiSettings: args.vapiSettings,

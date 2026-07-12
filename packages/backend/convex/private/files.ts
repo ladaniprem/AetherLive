@@ -1,4 +1,4 @@
-import { query, mutation } from "../_generated/server";
+import { query, mutation, action } from "../_generated/server";
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 import { Doc, Id } from "../_generated/dataModel";
@@ -18,8 +18,14 @@ export const list = query({
         paginationOpts: paginationOptsValidator,
     },
     handler: async (ctx, args) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) {
+            throw new Error("Not authenticated");
+        }
+
         const result = await ctx.db
             .query("files")
+            .filter((q) => q.eq(q.field("organizationId"), identity.orgId as string))
             .order("desc")
             .paginate(args.paginationOpts);
 
@@ -38,7 +44,7 @@ export const list = query({
     },
 });
 
-export const addFile = mutation({
+export const addFile = action({
     args: {
         bytes: v.bytes(),
         filename: v.string(),
@@ -48,15 +54,21 @@ export const addFile = mutation({
     handler: async (ctx, args) => {
         const { bytes, filename, mimeType, category } = args;
 
-        const storageId = await ctx.storage.store(bytes);
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) {
+            throw new Error("Not authenticated");
+        }
 
-        const fileId = await ctx.db.insert("files", {
+        const blob = new Blob([bytes], { type: mimeType });
+        const storageId = await ctx.storage.store(blob);
+
+        const fileId = await ctx.runMutation("_saveFile:saveFile" as any, {
             name: filename,
             type: mimeType,
             size: bytes.byteLength,
             storageId,
             category,
-            organizationId: "",
+            organizationId: identity.orgId as string,
         });
 
         return fileId;
@@ -69,9 +81,19 @@ export const deleteFile = mutation({
     },
     handler: async (ctx, args) => {
         const { entryId } = args;
+
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) {
+            throw new Error("Not authenticated");
+        }
+
         const file = await ctx.db.get("files", entryId);
         if (!file) {
             throw new Error("File not found");
+        }
+
+        if (file.organizationId !== identity.orgId) {
+            throw new Error("Not authorized");
         }
 
         await ctx.storage.delete(file.storageId);

@@ -2,6 +2,8 @@ import { query, mutation, action } from "../_generated/server";
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 import { listMessages, saveMessage } from "@convex-dev/agent";
+import { checkRateLimit, checkRateLimitAction } from "../lib/rateLimit";
+import { components } from "../_generated/api";
 
 export const getMany = query({
     args: {
@@ -10,6 +12,12 @@ export const getMany = query({
     },
     handler: async (ctx, args) => {
         const { threadId, paginationOpts } = args;
+
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) {
+            throw new Error("Not authenticated");
+        }
+
         return await listMessages(ctx, components.agent, {
             threadId,
             paginationOpts,
@@ -25,9 +33,21 @@ export const create = mutation({
     handler: async (ctx, args) => {
         const { conversationId, prompt } = args;
 
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) {
+            throw new Error("Not authenticated");
+        }
+
+        await checkRateLimit(ctx, "messageCreate", identity.subject);
+
         const conversation = await ctx.db.get("conversations", conversationId);
         if (!conversation) {
             throw new Error("Conversation not found");
+        }
+
+        const contactSession = await ctx.db.get("contactSessions", conversation.contactSessionId);
+        if (!contactSession || contactSession.organizationId !== identity.orgId) {
+            throw new Error("Not authorized");
         }
 
         await saveMessage(ctx, components.agent, {
@@ -41,8 +61,16 @@ export const enhanceResponse = action({
     args: {
         prompt: v.string(),
     },
-    handler: async (_ctx, args) => {
+    handler: async (ctx, args) => {
         const { prompt } = args;
+
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) {
+            throw new Error("Not authenticated");
+        }
+
+        await checkRateLimitAction(ctx, "enhanceResponse", identity.subject);
+
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
             headers: {

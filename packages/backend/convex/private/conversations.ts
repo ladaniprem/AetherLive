@@ -1,6 +1,8 @@
 import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
+import { listMessages } from "@convex-dev/agent";
+import { components } from "../_generated/api";
 
 export const getMany = query({
     args: {
@@ -14,6 +16,11 @@ export const getMany = query({
         ),
     },
     handler: async (ctx, args) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) {
+            throw new Error("Not authenticated");
+        }
+
         let query = ctx.db.query("conversations");
 
         if (args.status) {
@@ -22,18 +29,22 @@ export const getMany = query({
 
         const result = await query.order("desc").paginate(args.paginationOpts);
 
-        const page = await Promise.all(
+        const page = (await Promise.all(
             result.page.map(async (conversation) => {
                 const contactSession = await ctx.db.get(
                     "contactSessions",
                     conversation.contactSessionId,
                 );
 
-                const lastMessage = await ctx.db
-                    .query("messages")
-                    .withIndex("by_threadId", (q) => q.eq("threadId", conversation.threadId))
-                    .order("desc")
-                    .first();
+                if (!contactSession || contactSession.organizationId !== identity.orgId) {
+                    return null;
+                }
+
+                const lastMsgResult = await listMessages(ctx, components.agent, {
+                    threadId: conversation.threadId,
+                    paginationOpts: { numItems: 1, cursor: null },
+                });
+                const lastMessage = lastMsgResult.page[0] ?? null;
 
                 return {
                     ...conversation,
@@ -41,7 +52,7 @@ export const getMany = query({
                     lastMessage,
                 };
             }),
-        );
+        )).filter((item): item is NonNullable<typeof item> => item !== null);
 
         return {
             ...result,
@@ -56,7 +67,23 @@ export const getOne = query({
     },
     handler: async (ctx, args) => {
         const { conversationId } = args;
-        return await ctx.db.get("conversations", conversationId);
+
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) {
+            throw new Error("Not authenticated");
+        }
+
+        const conversation = await ctx.db.get("conversations", conversationId);
+        if (!conversation) {
+            return null;
+        }
+
+        const contactSession = await ctx.db.get("contactSessions", conversation.contactSessionId);
+        if (!contactSession || contactSession.organizationId !== identity.orgId) {
+            return null;
+        }
+
+        return conversation;
     },
 });
 
@@ -71,6 +98,22 @@ export const updateStatus = mutation({
     },
     handler: async (ctx, args) => {
         const { conversationId, status } = args;
+
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) {
+            throw new Error("Not authenticated");
+        }
+
+        const conversation = await ctx.db.get("conversations", conversationId);
+        if (!conversation) {
+            throw new Error("Conversation not found");
+        }
+
+        const contactSession = await ctx.db.get("contactSessions", conversation.contactSessionId);
+        if (!contactSession || contactSession.organizationId !== identity.orgId) {
+            throw new Error("Not authorized");
+        }
+
         await ctx.db.patch("conversations", conversationId, { status });
     },
 });

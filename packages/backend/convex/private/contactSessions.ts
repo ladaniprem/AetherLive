@@ -8,10 +8,19 @@ export const getOneByConversationId = query({
     handler: async (ctx, args) => {
         const { conversationId } = args;
 
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) {
+            throw new Error("Not authenticated");
+        }
+
         const contactSession = await ctx.db
             .query("contactSessions")
             .filter((q) => q.eq(q.field("conversationId"), conversationId))
             .first();
+
+        if (!contactSession || contactSession.organizationId !== identity.orgId) {
+            return null;
+        }
 
         return contactSession;
     },
