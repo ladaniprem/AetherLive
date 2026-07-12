@@ -1,0 +1,18 @@
+⨯ Failed to load next.config.ts, see more info here https://nextjs.org/docs/messages/next-config-error
+Error: Cannot find module '@sentry/nextjs'
+Require stack:
+- D:\prem\AI-Customer-Support\AetherLive\apps\web\next.config.compiled.js
+- D:\prem\AI-Customer-Support\AetherLive\node_modules\.pnpm\next@16.2.6_@babel+core@7.2_ee6123ad7e9f962a9373ff47d209d4ed\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- D:\prem\AI-Customer-Support\AetherLive\node_modules\.pnpm\next@16.2.6_@babel+core@7.2_ee6123ad7e9f962a9373ff47d209d4ed\node_modules\next\dist\server\config.js
+- D:\prem\AI-Customer-Support\AetherLive\node_modules\.pnpm\next@16.2.6_@babel+core@7.2_ee6123ad7e9f962a9373ff47d209d4ed\node_modules\next\dist\server\next.js
+- D:\prem\AI-Customer-Support\AetherLive\node_modules\.pnpm\next@16.2.6_@babel+core@7.2_ee6123ad7e9f962a9373ff47d209d4ed\node_modules\next\dist\server\lib\start-server.js
+    at Object.<anonymous> (D:\prem\AI-Customer-Support\AetherLive\apps\web\next.config.compiled.js:11:17) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\prem\\AI-Customer-Support\\AetherLive\\apps\\web\\next.config.compiled.js',
+    'D:\\prem\\AI-Customer-Support\\AetherLive\\node_modules\\.pnpm\\next@16.2.6_@babel+core@7.2_ee6123ad7e9f962a9373ff47d209d4ed\\node_modules\\next\\dist\\build\\next-config-ts\\transpile-config.js',
+    'D:\\prem\\AI-Customer-Support\\AetherLive\\node_modules\\.pnpm\\next@16.2.6_@babel+core@7.2_ee6123ad7e9f962a9373ff47d209d4ed\\node_modules\\next\\dist\\server\\config.js',
+    'D:\\prem\\AI-Customer-Support\\AetherLive\\node_modules\\.pnpm\\next@16.2.6_@babel+core@7.2_ee6123ad7e9f962a9373ff47d209d4ed\\node_modules\\next\\dist\\server\\next.js',
+    'D:\\prem\\AI-Customer-Support\\AetherLive\\node_modules\\.pnpm\\next@16.2.6_@babel+core@7.2_ee6123ad7e9f962a9373ff47d209d4ed\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ]
+}
