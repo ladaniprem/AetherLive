@@ -4,6 +4,7 @@ import type { HTMLAttributes } from "react";
 import { memo } from "react";
 import ReactMarkdown, { type Options } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeSanitize from "rehype-sanitize";
 import { cn } from "@workspace/ui/lib/utils";
 
 export type AIResponseProps = HTMLAttributes<HTMLDivElement> & {
@@ -95,6 +96,7 @@ export const AIResponse = memo(
       <ReactMarkdown
         components={components}
         remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeSanitize]}
         {...options}
       >
         {children}
