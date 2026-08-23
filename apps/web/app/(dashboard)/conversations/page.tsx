@@ -3,5 +3,5 @@ import { ConversationsView } from "@/modules/dashboard/ui/views/conversations-vi
 const Page = () => {
   return <ConversationsView />
 };
- 
+
 export default Page;

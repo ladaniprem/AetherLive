@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 import { listMessages } from "@convex-dev/agent";
 import { components } from "../_generated/api";
+import { getOrganizationId } from "../lib/auth";
 
 export const getMany = query({
     args: {
@@ -21,13 +22,27 @@ export const getMany = query({
             throw new Error("Not authenticated");
         }
 
-        let query = ctx.db.query("conversations");
+const organizationId = getOrganizationId(identity);
 
-        if (args.status) {
-            query = query.filter((q) => q.eq(q.field("status"), args.status));
+        if (!organizationId) {
+            return { page: [], continueCursor: "", isDone: true };
         }
 
-        const result = await query.order("desc").paginate(args.paginationOpts);
+        const result = args.status
+            ? await ctx.db
+                .query("conversations")
+                .withIndex("by_organizationId_and_status", (q) =>
+                    q.eq("organizationId", organizationId).eq("status", args.status!),
+                )
+                .order("desc")
+                .paginate(args.paginationOpts)
+            : await ctx.db
+                .query("conversations")
+                .withIndex("by_organizationId_and_status", (q) =>
+                    q.eq("organizationId", organizationId),
+                )
+                .order("desc")
+                .paginate(args.paginationOpts);
 
         const page = (await Promise.all(
             result.page.map(async (conversation) => {
@@ -36,7 +51,7 @@ export const getMany = query({
                     conversation.contactSessionId,
                 );
 
-                if (!contactSession || contactSession.organizationId !== identity.orgId) {
+                if (!contactSession) {
                     return null;
                 }
 
@@ -73,13 +88,17 @@ export const getOne = query({
             throw new Error("Not authenticated");
         }
 
+const organizationId = getOrganizationId(identity);
+
+        if (!organizationId) return null;
+
         const conversation = await ctx.db.get("conversations", conversationId);
         if (!conversation) {
             return null;
         }
 
         const contactSession = await ctx.db.get("contactSessions", conversation.contactSessionId);
-        if (!contactSession || contactSession.organizationId !== identity.orgId) {
+        if (!contactSession || contactSession.organizationId !== organizationId) {
             return null;
         }
 
@@ -104,13 +123,16 @@ export const updateStatus = mutation({
             throw new Error("Not authenticated");
         }
 
+const organizationId = getOrganizationId(identity);
+
+        if (!organizationId) throw new Error("Not authorized");
+
         const conversation = await ctx.db.get("conversations", conversationId);
         if (!conversation) {
             throw new Error("Conversation not found");
         }
 
-        const contactSession = await ctx.db.get("contactSessions", conversation.contactSessionId);
-        if (!contactSession || contactSession.organizationId !== identity.orgId) {
+        if (conversation.organizationId !== organizationId) {
             throw new Error("Not authorized");
         }
 

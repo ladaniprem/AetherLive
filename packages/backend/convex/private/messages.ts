@@ -4,6 +4,7 @@ import { paginationOptsValidator } from "convex/server";
 import { listMessages, saveMessage } from "@convex-dev/agent";
 import { checkRateLimit, checkRateLimitAction } from "../lib/rateLimit";
 import { components } from "../_generated/api";
+import { getOrganizationId } from "../lib/auth";
 
 export const getMany = query({
     args: {
@@ -40,13 +41,17 @@ export const create = mutation({
 
         await checkRateLimit(ctx, "messageCreate", identity.subject);
 
+const organizationId = getOrganizationId(identity);
+
+        if (!organizationId) throw new Error("Not authorized");
+
         const conversation = await ctx.db.get("conversations", conversationId);
         if (!conversation) {
             throw new Error("Conversation not found");
         }
 
         const contactSession = await ctx.db.get("contactSessions", conversation.contactSessionId);
-        if (!contactSession || contactSession.organizationId !== identity.orgId) {
+        if (!contactSession || contactSession.organizationId !== organizationId) {
             throw new Error("Not authorized");
         }
 

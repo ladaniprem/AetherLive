@@ -1,12 +1,63 @@
-import { action } from "../_generated/server";
+import { action, internalQuery } from "../_generated/server";
+import { ActionCtx } from "../_generated/server";
 import { v } from "convex/values";
+import { internal } from "../_generated/api";
+import { getOrganizationId } from "../lib/auth";
+
+export const getSecret = internalQuery({
+    args: {},
+    handler: async (ctx) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) {
+            throw new Error("Not authenticated");
+        }
+
+        const organizationId = getOrganizationId(identity);
+
+        const secret = organizationId
+            ? await ctx.db
+                  .query("secrets")
+                  .withIndex("by_service_and_organizationId", (q) =>
+                      q
+                          .eq("service", "vapi")
+                          .eq("organizationId", organizationId),
+                  )
+                  .first()
+            : await ctx.db
+                  .query("secrets")
+                  .filter((q) =>
+                      q.and(
+                          q.eq(q.field("service"), "vapi"),
+                          q.eq(q.field("organizationId"), undefined),
+                      ),
+                  )
+                  .first();
+
+        if (!secret) {
+            return null;
+        }
+
+        return secret.value as {
+            publicApiKey?: string;
+            privateApiKey?: string;
+        };
+    },
+});
+
+async function getVapiApiKey(ctx: ActionCtx): Promise<string | undefined> {
+    const secret: {
+        publicApiKey?: string;
+        privateApiKey?: string;
+    } | null = await ctx.runQuery(internal.private.vapi.getSecret, {});
+    return secret?.privateApiKey ?? process.env.VAPI_API_KEY;
+}
 
 export const getAssistants = action({
     args: {},
-    handler: async () => {
-        const apiKey = process.env.VAPI_API_KEY;
+    handler: async (ctx) => {
+        const apiKey = await getVapiApiKey(ctx);
         if (!apiKey) {
-            throw new Error("VAPI_API_KEY is not configured");
+            throw new Error("Vapi API key is not configured");
         }
 
         const response = await fetch("https://api.vapi.ai/assistant", {
@@ -25,10 +76,10 @@ export const getAssistants = action({
 
 export const getPhoneNumbers = action({
     args: {},
-    handler: async () => {
-        const apiKey = process.env.VAPI_API_KEY;
+    handler: async (ctx) => {
+        const apiKey = await getVapiApiKey(ctx);
         if (!apiKey) {
-            throw new Error("VAPI_API_KEY is not configured");
+            throw new Error("Vapi API key is not configured");
         }
 
         const response = await fetch("https://api.vapi.ai/phone-number", {

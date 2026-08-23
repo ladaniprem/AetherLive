@@ -1,5 +1,6 @@
 import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
+import { getOrganizationId } from "../lib/auth";
 
 export const upsert = mutation({
     args: {
@@ -12,13 +13,15 @@ export const upsert = mutation({
             throw new Error("Not authenticated");
         }
 
+        const organizationId = getOrganizationId(identity);
+        if (!organizationId) {
+            throw new Error("Missing organization");
+        }
+
         const existing = await ctx.db
             .query("secrets")
-            .filter((q) =>
-                q.and(
-                    q.eq(q.field("service"), args.service),
-                    q.eq(q.field("organizationId"), identity.orgId as string),
-                ),
+            .withIndex("by_service_and_organizationId", (q) =>
+                q.eq("service", args.service).eq("organizationId", organizationId),
             )
             .first();
 
@@ -29,7 +32,7 @@ export const upsert = mutation({
         } else {
             await ctx.db.insert("secrets", {
                 service: args.service,
-                organizationId: identity.orgId as string,
+                organizationId,
                 value: args.value,
             });
         }
@@ -38,20 +41,30 @@ export const upsert = mutation({
 
 export const getVapiSecrets = query({
     args: {
-        organizationId: v.string(),
+        organizationId: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         const { organizationId } = args;
 
-        const secret = await ctx.db
-            .query("secrets")
-            .filter((q) =>
-                q.and(
-                    q.eq(q.field("service"), "vapi"),
-                    q.eq(q.field("organizationId"), organizationId),
-                ),
-            )
-            .first();
+        const secret = organizationId
+            ? await ctx.db
+                  .query("secrets")
+                  .filter((q) =>
+                      q.and(
+                          q.eq(q.field("service"), "vapi"),
+                          q.eq(q.field("organizationId"), organizationId),
+                      ),
+                  )
+                  .first()
+            : await ctx.db
+                  .query("secrets")
+                  .filter((q) =>
+                      q.and(
+                          q.eq(q.field("service"), "vapi"),
+                          q.eq(q.field("organizationId"), undefined),
+                      ),
+                  )
+                  .first();
 
         if (!secret) {
             return null;

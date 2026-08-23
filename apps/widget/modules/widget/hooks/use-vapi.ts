@@ -62,9 +62,9 @@ export const useVapi = () => {
     });
 
     return () => {
-      vapiInstance.disconnect();
+      vapiInstance.stop();
     };
-    }, []);
+  }, [vapiSecrets]);
 
     const startCall = () => {
  if (!vapiSecrets || !widgetSettings?.vapiSettings?.assistantId) {

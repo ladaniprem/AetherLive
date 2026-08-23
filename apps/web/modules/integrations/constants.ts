@@ -16,14 +16,14 @@ export const INTEGRATIONS = [
   },
   {
     id: "javascript",
-    title: "JavaScript",
+    title: "JS",
     icon: "/languages/javascript.svg",
   },
 ];
 
 export type IntegrationId = (typeof INTEGRATIONS)[number]["id"];
 
-export const HTML_SCRIPT = `<script src="localhost:3000/widget.js" data-organization-id="{{ORGANIZATION_ID}}"></script>`;
-export const REACT_SCRIPT = `<script src="localhost:3000/widget.js" data-organization-id="{{ORGANIZATION_ID}}"></script>`;
-export const NEXTJS_SCRIPT = `<script src="localhost:3000/widget.js" data-organization-id="{{ORGANIZATION_ID}}"></script>`;
-export const JAVASCRIPT_SCRIPT = `<script src="localhost:3000/widget.js" data-organization-id="{{ORGANIZATION_ID}}"></script>`;
+export const HTML_SCRIPT = `<script src="http://localhost:3004/widget.js" data-organization-id="{{ORGANIZATION_ID}}"></script>`;
+export const REACT_SCRIPT = `<script src="http://localhost:3004/widget.js" data-organization-id="{{ORGANIZATION_ID}}"></script>`;
+export const NEXTJS_SCRIPT = `<script src="http://localhost:3004/widget.js" data-organization-id="{{ORGANIZATION_ID}}"></script>`;
+export const JAVASCRIPT_SCRIPT = `<script src="http://localhost:3004/widget.js" data-organization-id="{{ORGANIZATION_ID}}"></script>`;

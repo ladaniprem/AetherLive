@@ -1,5 +1,6 @@
 import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
+import { getOrganizationId } from "../lib/auth";
 
 export const getOne = query({
     args: {
@@ -16,7 +17,7 @@ export const getOne = query({
             .filter((q) =>
                 q.and(
                     q.eq(q.field("service"), args.service),
-                    q.eq(q.field("organizationId"), identity.orgId),
+                    q.eq(q.field("organizationId"), getOrganizationId(identity)),
                 ),
             )
             .first();
@@ -40,7 +41,7 @@ export const remove = mutation({
             .filter((q) =>
                 q.and(
                     q.eq(q.field("service"), args.service),
-                    q.eq(q.field("organizationId"), identity.orgId),
+                    q.eq(q.field("organizationId"), getOrganizationId(identity)),
                 ),
             )
             .first();

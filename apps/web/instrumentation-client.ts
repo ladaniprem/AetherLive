@@ -7,28 +7,19 @@ import * as Sentry from "@sentry/nextjs";
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
-  // Include user IP, request headers, etc. in error events
   sendDefaultPii: true,
 
-  // 100% in dev, 10% in production
-  tracesSampleRate: process.env.NODE_ENV === "development" ? 1.0 : 0.1,
+  tracesSampleRate: process.env.NODE_ENV === "development" ? 0 : 1.0,
 
-  // Session Replay: record 10% of all sessions, 100% of sessions with errors
-  replaysSessionSampleRate: 0.1,
-  replaysOnErrorSampleRate: 1.0,
+  replaysSessionSampleRate: process.env.NODE_ENV === "development" ? 0 : 0.1,
+  replaysOnErrorSampleRate: process.env.NODE_ENV === "development" ? 0 : 1.0,
 
-  // Enable Sentry Logs product
-  enableLogs: true,
+  enableLogs: process.env.NODE_ENV !== "development",
 
-  integrations: [
-    Sentry.replayIntegration(),
-    // Optional: user feedback widget
-    // Sentry.feedbackIntegration({ colorScheme: "system" }),
-  ],
+  integrations: process.env.NODE_ENV === "development"
+    ? []
+    : [Sentry.replayIntegration()],
 
-  // Route browser events through our server to avoid CORS + ad-blocker blocks.
-  // NOTE: tunnelRoute in next.config.ts injects this via webpack, but Turbopack
-  // (dev mode) skips that — so we set it explicitly here as well.
   tunnel: "/api/sentry-tunnel",
 });
 
