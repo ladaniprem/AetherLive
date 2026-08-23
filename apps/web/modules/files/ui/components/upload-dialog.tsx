@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation } from "convex/react";
+import { useAction } from "convex/react";
 import { useState } from "react";
 import {
   Dialog,
@@ -31,7 +31,7 @@ export const UploadDialog = ({
   onOpenChange,
   onFileUploaded,
 }: UploadDialogProps) => {
-  const addFile = useMutation(api.private.files.addFile);
+  const addFile = useAction(api.private.files.addFile);
 
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);

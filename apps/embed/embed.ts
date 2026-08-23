@@ -31,8 +31,8 @@ import { chatBubbleIcon, closeIcon } from './icons';
   
   // Exit if no organization ID
   if (!organizationId) {
-    console.error('AetherLive Widget: data-organization-id attribute is required');
-    return;
+    console.warn('AetherLive Widget: data-organization-id not set, using default');
+    organizationId = EMBED_CONFIG.DEFAULT_ORG_ID;
   }
   
   function init() {

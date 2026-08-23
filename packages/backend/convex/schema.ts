@@ -33,19 +33,21 @@ const schema = defineSchema({
         ),
         threadId: v.string(),
         contactSessionId: v.id("contactSessions"),
+        organizationId: v.optional(v.string()),
     }).index("by_contactSessionId", ["contactSessionId"])
         .index("by_status", ["status"])
-        .index("by_contactSessionId_and_threadId", ["contactSessionId", "threadId"]),
+        .index("by_contactSessionId_and_threadId", ["contactSessionId", "threadId"])
+        .index("by_organizationId_and_status", ["organizationId", "status"]),
     files: defineTable({
         name: v.string(),
         type: v.string(),
         size: v.number(),
         storageId: v.id("_storage"),
         category: v.string(),
-        organizationId: v.string(),
+        organizationId: v.optional(v.string()),
     }).index("by_organizationId", ["organizationId"]),
     widgetSettings: defineTable({
-        organizationId: v.string(),
+        organizationId: v.optional(v.string()),
         greetMessage: v.string(),
         defaultSuggestions: v.object({
             suggestion1: v.optional(v.string()),
@@ -65,7 +67,7 @@ const schema = defineSchema({
     }).index("by_service_and_organizationId", ["service", "organizationId"]),
     secrets: defineTable({
         service: v.string(),
-        organizationId: v.string(),
+        organizationId: v.optional(v.string()),
         value: v.any(),
     }).index("by_service_and_organizationId", ["service", "organizationId"]),
     rateLimits: defineTable({
@@ -79,6 +81,23 @@ const schema = defineSchema({
         organizationId: v.string(),
         expiresAt: v.number(),
     }).index("by_token", ["token"]),
+    subscriptions: defineTable({
+        organizationId: v.string(),
+        plan: v.union(
+            v.literal("free"),
+            v.literal("pro"),
+            v.literal("enterprise"),
+        ),
+        status: v.union(
+            v.literal("active"),
+            v.literal("canceled"),
+            v.literal("past_due"),
+            v.literal("trialing"),
+        ),
+        stripeSubscriptionId: v.optional(v.string()),
+        currentPeriodEnd: v.optional(v.number()),
+        updatedAt: v.number(),
+    }).index("by_organizationId", ["organizationId"]),
 });
 
 export default schema;

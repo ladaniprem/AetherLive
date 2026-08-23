@@ -4,6 +4,7 @@ import "@workspace/ui/globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@workspace/ui/lib/utils";
 import { ClerkProvider } from '@clerk/nextjs'
+import { Toaster } from "@workspace/ui/components/sonner"
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist-sans' })
 

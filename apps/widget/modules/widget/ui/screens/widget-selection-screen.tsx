@@ -4,7 +4,7 @@ import { Button } from "@workspace/ui/components/button";
 import { useAtomValue, useSetAtom } from "jotai";
 import { ChevronRightIcon, MessageSquareTextIcon, MicIcon, PhoneIcon } from "lucide-react";
 import { contactSessionIdAtomFamily, conversationIdAtom, errorMessageAtom, hasVapiSecretsAtom, organizationIdAtom, screenAtom, widgetSettingsAtom } from "../../atoms/widget-atoms";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
 import { useState } from "react";
 import { WidgetFooter } from "../components/widget-footer";
@@ -20,8 +20,15 @@ export const WidgetSelectionScreen = () => {
   const contactSessionId = useAtomValue(
     contactSessionIdAtomFamily(organizationId || "")
   );
+  const setContactSessionId = useSetAtom(
+    contactSessionIdAtomFamily(organizationId || "")
+  );
 
   const createConversation = useMutation(api.public.conversations.create);
+  const fetchContactSession = useQuery(
+    api.public.contactSessions.getOne,
+    contactSessionId ? { contactSessionId } : "skip",
+  );
   const [isPending, setIsPending] = useState(false);
 
   const handleNewConversation = async () => {
@@ -38,6 +45,20 @@ export const WidgetSelectionScreen = () => {
     
     setIsPending(true);
     try {
+      if (
+        contactSessionId &&
+        fetchContactSession &&
+        fetchContactSession.organizationId !== organizationId
+      ) {
+        console.warn(
+          "[widget] stored contactSession belongs to a different org — clearing",
+          { stored: fetchContactSession.organizationId, current: organizationId }
+        );
+        setContactSessionId(null);
+        setScreen("auth");
+        return;
+      }
+
       const conversationId = await createConversation({
         contactSessionId,
         organizationId,
@@ -45,8 +66,12 @@ export const WidgetSelectionScreen = () => {
 
       setConversationId(conversationId);
       setScreen("chat");
-    } catch {
-      setScreen("auth");
+    } catch (error) {
+      console.error("[widget] handleNewConversation failed:", error);
+      setErrorMessage(
+        error instanceof Error ? error.message : "Failed to start conversation"
+      );
+      setScreen("error");
     } finally {
       setIsPending(false);
     }
@@ -57,7 +82,7 @@ export const WidgetSelectionScreen = () => {
       <WidgetHeader>
         <div className="flex flex-col justify-between gap-y-2 px-2 py-6 font-semibold">
           <p className="text-3xl">
-            Hi there! 👋
+            {widgetSettings?.greetMessage || "Hi there! 👋"}
           </p>
           <p className="text-lg">
             Let&apos;s get you started

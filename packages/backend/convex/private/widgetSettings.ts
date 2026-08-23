@@ -1,5 +1,6 @@
 import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
+import { getOrganizationId } from "../lib/auth";
 
 export const getOne = query({
     args: {},
@@ -9,10 +10,17 @@ export const getOne = query({
             throw new Error("Not authenticated");
         }
 
-        const settings = await ctx.db
-            .query("widgetSettings")
-            .filter((q) => q.eq(q.field("organizationId"), identity.orgId as string))
-            .first();
+        const organizationId = getOrganizationId(identity);
+
+        const settings = organizationId
+            ? await ctx.db
+                  .query("widgetSettings")
+                  .filter((q) => q.eq(q.field("organizationId"), organizationId))
+                  .first()
+            : await ctx.db
+                  .query("widgetSettings")
+                  .filter((q) => q.eq(q.field("organizationId"), undefined))
+                  .first();
 
         return settings;
     },
@@ -37,10 +45,17 @@ export const upsert = mutation({
             throw new Error("Not authenticated");
         }
 
-        const existing = await ctx.db
-            .query("widgetSettings")
-            .filter((q) => q.eq(q.field("organizationId"), identity.orgId as string))
-            .first();
+        const organizationId = getOrganizationId(identity);
+
+        const existing = organizationId
+            ? await ctx.db
+                  .query("widgetSettings")
+                  .filter((q) => q.eq(q.field("organizationId"), organizationId))
+                  .first()
+            : await ctx.db
+                  .query("widgetSettings")
+                  .filter((q) => q.eq(q.field("organizationId"), undefined))
+                  .first();
 
         if (existing) {
             await ctx.db.patch("widgetSettings", existing._id, {
@@ -50,11 +65,11 @@ export const upsert = mutation({
             });
         } else {
             await ctx.db.insert("widgetSettings", {
-                organizationId: identity.orgId as string,
                 greetMessage: args.greetMessage,
                 defaultSuggestions: args.defaultSuggestions,
                 vapiSettings: args.vapiSettings,
-            });
+                ...(organizationId ? { organizationId } : {}),
+            } as any);
         }
     },
 });

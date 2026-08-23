@@ -1,4 +1,5 @@
 import { query, mutation } from './_generated/server';
+import { getOrganizationId } from "./lib/auth";
 
 export const getMany = query({
     args: {},
@@ -16,7 +17,7 @@ export const add = mutation({
             throw new Error("Not authenticated");
         }
 
-        const orgId = identity.orgId as string;
+        const orgId = getOrganizationId(identity);
 
         if(!orgId) {
             throw new Error("Missing organization");

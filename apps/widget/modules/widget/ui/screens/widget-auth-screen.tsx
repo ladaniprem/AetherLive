@@ -16,7 +16,7 @@ import { api } from "@workspace/backend/_generated/api";
 import { Doc } from "@workspace/backend/_generated/dataModel";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useEffect } from "react";
-import { contactSessionIdAtomFamily, csrfTokenAtom, organizationIdAtom, screenAtom } from "../../atoms/widget-atoms";
+import { contactSessionIdAtomFamily, csrfTokenAtom, organizationIdAtom, screenAtom, widgetSettingsAtom } from "../../atoms/widget-atoms";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -26,6 +26,7 @@ const formSchema = z.object({
 export const WidgetAuthScreen = () => {
   const setScreen = useSetAtom(screenAtom);
 
+  const widgetSettings = useAtomValue(widgetSettingsAtom);
   const organizationId = useAtomValue(organizationIdAtom);
   const [csrfToken, setCsrfToken] = useAtom(csrfTokenAtom);
   const generateCsrfToken = useAction(api.public.csrf.generate);

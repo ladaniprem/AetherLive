@@ -7,12 +7,9 @@ import * as Sentry from "@sentry/nextjs";
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
 
-  // Include user IP, request headers, etc. in error events
   sendDefaultPii: true,
 
-  // 100% in dev, 10% in production
-  tracesSampleRate: process.env.NODE_ENV === "development" ? 1.0 : 0.1,
+  tracesSampleRate: process.env.NODE_ENV === "development" ? 0 : 0.1,
 
-  // Enable Sentry Logs product
-  enableLogs: true,
+  enableLogs: process.env.NODE_ENV !== "development",
 });

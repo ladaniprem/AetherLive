@@ -14,6 +14,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "NEXT_PUBLIC_SENTRY_DSN not set" }, { status: 500 });
   }
 
+  if (process.env.NODE_ENV === "development") {
+    return NextResponse.json({ status: "ok", dev: true }, { status: 200 });
+  }
+
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
     || req.headers.get("x-real-ip")
     || "unknown";

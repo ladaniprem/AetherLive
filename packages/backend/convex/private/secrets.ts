@@ -1,5 +1,6 @@
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
+import { getOrganizationId } from "../lib/auth";
 
 export const upsert = mutation({
     args: {
@@ -12,15 +13,27 @@ export const upsert = mutation({
             throw new Error("Not authenticated");
         }
 
-        const existing = await ctx.db
-            .query("secrets")
-            .filter((q) =>
-                q.and(
-                    q.eq(q.field("service"), args.service),
-                    q.eq(q.field("organizationId"), identity.orgId as string),
-                ),
-            )
-            .first();
+        const organizationId = getOrganizationId(identity);
+
+        const existing = organizationId
+            ? await ctx.db
+                  .query("secrets")
+                  .filter((q) =>
+                      q.and(
+                          q.eq(q.field("service"), args.service),
+                          q.eq(q.field("organizationId"), organizationId),
+                      ),
+                  )
+                  .first()
+            : await ctx.db
+                  .query("secrets")
+                  .filter((q) =>
+                      q.and(
+                          q.eq(q.field("service"), args.service),
+                          q.eq(q.field("organizationId"), undefined),
+                      ),
+                  )
+                  .first();
 
         if (existing) {
             await ctx.db.patch("secrets", existing._id, {
@@ -29,9 +42,9 @@ export const upsert = mutation({
         } else {
             await ctx.db.insert("secrets", {
                 service: args.service,
-                organizationId: identity.orgId as string,
                 value: args.value,
-            });
+                ...(organizationId ? { organizationId } : {}),
+            } as any);
         }
     },
 });

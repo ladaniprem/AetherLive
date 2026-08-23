@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
                 source: "/(.*)",
                 headers: [
                     { key: "X-Content-Type-Options", value: "nosniff" },
-                    { key: "X-Frame-Options", value: "DENY" },
+                    { key: "X-Frame-Options", value: "ALLOWALL" },
                     { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
                     { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
                     { key: "X-DNS-Prefetch-Control", value: "on" },

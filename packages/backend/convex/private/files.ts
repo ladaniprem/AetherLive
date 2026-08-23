@@ -2,6 +2,7 @@ import { query, mutation, action } from "../_generated/server";
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 import { Doc, Id } from "../_generated/dataModel";
+import { getOrganizationId } from "../lib/auth";
 
 export type PublicFile = {
     id: Id<"files">;
@@ -10,7 +11,7 @@ export type PublicFile = {
     size: number;
     storageId: Id<"_storage">;
     category: string;
-    organizationId: string;
+    organizationId?: string;
 };
 
 export const list = query({
@@ -23,9 +24,15 @@ export const list = query({
             throw new Error("Not authenticated");
         }
 
+        const organizationId = getOrganizationId(identity);
+
         const result = await ctx.db
             .query("files")
-            .filter((q) => q.eq(q.field("organizationId"), identity.orgId as string))
+            .filter((q) =>
+                organizationId
+                    ? q.eq(q.field("organizationId"), organizationId)
+                    : q.eq(q.field("organizationId"), undefined),
+            )
             .order("desc")
             .paginate(args.paginationOpts);
 
@@ -62,13 +69,15 @@ export const addFile = action({
         const blob = new Blob([bytes], { type: mimeType });
         const storageId = await ctx.storage.store(blob);
 
+const organizationId = getOrganizationId(identity);
+
         const fileId = await ctx.runMutation("_saveFile:saveFile" as any, {
             name: filename,
             type: mimeType,
             size: bytes.byteLength,
             storageId,
             category,
-            organizationId: identity.orgId as string,
+            ...(organizationId ? { organizationId } : {}),
         });
 
         return fileId;
@@ -92,7 +101,7 @@ export const deleteFile = mutation({
             throw new Error("File not found");
         }
 
-        if (file.organizationId !== identity.orgId) {
+if (file.organizationId !== (getOrganizationId(identity))) {
             throw new Error("Not authorized");
         }
 

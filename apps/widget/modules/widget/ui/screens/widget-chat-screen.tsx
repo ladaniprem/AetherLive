@@ -12,7 +12,7 @@ import { DicebearAvatar } from "@workspace/ui/components/dicebear-avatar";
 import { useInfiniteScroll } from "@workspace/ui/hooks/use-infinite-scroll";
 import { InfiniteScrollTrigger } from "@workspace/ui/components/infinite-scroll-trigger";
 import { contactSessionIdAtomFamily, conversationIdAtom, organizationIdAtom, screenAtom, widgetSettingsAtom } from "../../atoms/widget-atoms";
-import { useAction, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
 import { Form, FormField } from "@workspace/ui/components/form";
 import {
@@ -100,7 +100,8 @@ export const WidgetChatScreen = () => {
     },
   });
 
-  const createMessage = useAction(api.public.messages.create);
+  const createMessage = useMutation(api.public.messages.create);
+  const triggerAgent = useAction(api.public.agent.respond);
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!conversation || !contactSessionId) {
       return;
@@ -113,6 +114,8 @@ export const WidgetChatScreen = () => {
       prompt: values.message,
       contactSessionId,
     });
+
+    triggerAgent({ threadId: conversation.threadId });
   };
 
   return (

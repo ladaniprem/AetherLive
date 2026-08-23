@@ -8,9 +8,16 @@ export const saveFile = mutation({
         size: v.number(),
         storageId: v.id("_storage"),
         category: v.string(),
-        organizationId: v.string(),
+        organizationId: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
-        return await ctx.db.insert("files", args);
+        return await ctx.db.insert("files", {
+            name: args.name,
+            type: args.type,
+            size: args.size,
+            storageId: args.storageId,
+            category: args.category,
+            ...(args.organizationId ? { organizationId: args.organizationId } : {}),
+        });
     },
 });

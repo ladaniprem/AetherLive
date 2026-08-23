@@ -70,6 +70,7 @@ const VapiPluginForm = ({
   setOpen: (value: boolean) => void;
 }) => {
   const upsertSecret = useMutation(api.public.secrets.upsert);
+  const upsertPlugin = useMutation(api.public.plugins.upsert);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -87,11 +88,12 @@ const VapiPluginForm = ({
           privateApiKey: values.privateApiKey,
         },
       });
+      await upsertPlugin({ service: "vapi" });
       setOpen(false);
       toast.success("Vapi secret created");
     } catch (error) {
       console.error(error);
-      toast.error("Something went wrong");
+      toast.error(error instanceof Error ? error.message : "Something went wrong");
     }
   };
 
@@ -177,7 +179,7 @@ const VapiPluginRemoveForm = ({
       toast.success("Vapi plugin removed");
     } catch (error) {
       console.error(error);
-      toast.error("Something went wrong");
+      toast.error(error instanceof Error ? error.message : "Something went wrong");
     }
   };
 
