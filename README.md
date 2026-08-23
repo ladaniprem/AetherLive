@@ -333,9 +333,7 @@ VAPI_API_KEY=...
 ---
 
 ## 📞 Support & Contact
-
 - **Landing → Contact** section or `apps/web/components/landing/footer.tsx`
-- **Issues & Feedback:** https://github.com/anomalyco/opencode — mention you're using **Muse Spark (opencode/muse-spark-1.2-contributor-free)**
 - **Docs for AI contributors:** `AGENTS.md` + `packages/backend/AGENTS.md` (+ `convex/_generated/ai/guidelines.md` before touching Convex)
 
 ---
