@@ -38,8 +38,7 @@ to `https://sensible-coyote-336.convex.cloud`, matching the backend deployment.
    stay pushed to `dev:sensible-coyote-336`.
 
 ## Watch out
-- `GEMINI_API_KEY` in `packages/backend/.env.local` is used by `agent:respond`. If the
-  agent now runs but replies fail, verify this key is valid for the Gemini API.
+- `AI_Credits_API_KEY` in `packages/backend/.env.local` is used by `agent:respond`. If the agent now runs but replies fail, verify this key is valid for the AI Credits API.
 
 ---
 
