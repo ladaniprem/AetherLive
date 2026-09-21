@@ -43,7 +43,7 @@ export const CustomizationForm = ({
   const upsertWidgetSettings = useMutation(api.private.widgetSettings.upsert);
 
   const form = useForm<FormSchema>({
-    resolver: zodResolver(widgetSettingsSchema),
+    resolver: zodResolver(widgetSettingsSchema as any) as any,
     defaultValues: {
       greetMessage:
         initialData?.greetMessage || "Hi! How can I help you today?",

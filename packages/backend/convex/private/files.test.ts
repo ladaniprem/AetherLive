@@ -113,7 +113,7 @@ describe("files.deleteFile", () => {
   });
 
   it("allows deleting own org file", async () => {
-    const ctx = mockCtx({ db: { get: vi.fn().mockResolvedValue(OWN_FILE) } });
+    const ctx = mockCtx({ db: { get: vi.fn().mockResolvedValue(OWN_FILE), delete: vi.fn().mockResolvedValue(null) }, storage: { delete: vi.fn().mockResolvedValue(null) } });
     const { deleteFile } = await import("./files");
     await expect((deleteFile as any).handler(ctx, { entryId: "f1" })).resolves.not.toThrow();
   });

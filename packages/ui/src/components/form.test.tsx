@@ -36,7 +36,7 @@ describe("Form components", () => {
           <FormField
             control={form.control}
             name="name"
-            render={({ field }) => (
+            render={({ field }: { field: any }) => (
               <FormItem>
                 <FormLabel>Name</FormLabel>
                 <FormControl>
@@ -63,7 +63,7 @@ describe("Form components", () => {
             control={form.control}
             name="name"
             rules={{ required: "Required" }}
-            render={({ field }) => (
+            render={({ field }: { field: any }) => (
               <FormItem>
                 <FormLabel>Name</FormLabel>
                 <FormControl>
@@ -87,7 +87,7 @@ describe("Form components", () => {
           <FormField
             control={form.control}
             name="name"
-            render={({ field }) => (
+            render={({ field }: { field: any }) => (
               <FormItem>
                 <FormLabel>Name</FormLabel>
                 <FormControl>
@@ -107,14 +107,14 @@ describe("Form components", () => {
   });
 
   it("FormMessage renders error text", async () => {
-    const { rerender } = render(
+    render(
       <TestForm onSubmit={() => {}}>
         {(form) => (
           <FormField
             control={form.control}
             name="name"
             rules={{ required: "This is required" }}
-            render={({ field }) => (
+            render={({ field }: { field: any }) => (
               <FormItem>
                 <FormLabel>Name</FormLabel>
                 <FormControl>
@@ -138,7 +138,7 @@ describe("Form components", () => {
             <FormField
               control={form.control}
               name="name"
-              render={({ field }) => (
+              render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
@@ -150,7 +150,7 @@ describe("Form components", () => {
             <FormField
               control={form.control}
               name="name"
-              render={({ field }) => (
+              render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Name2</FormLabel>
                   <FormControl>

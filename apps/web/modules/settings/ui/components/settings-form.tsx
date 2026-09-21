@@ -58,7 +58,7 @@ export const SettingsForm = () => {
   const { setTheme, theme } = useTheme();
 
   const profileForm = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileFormSchema),
+    resolver: zodResolver(profileFormSchema as any) as any,
     defaultValues: {
       name: user?.fullName || "",
       bio: "",
@@ -68,7 +68,7 @@ export const SettingsForm = () => {
   });
 
   const notificationsForm = useForm<NotificationsFormValues>({
-    resolver: zodResolver(notificationsFormSchema),
+    resolver: zodResolver(notificationsFormSchema as any) as any,
     defaultValues: {
       emailNotifications: true,
       marketingEmails: false,

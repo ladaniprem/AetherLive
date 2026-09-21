@@ -6,7 +6,7 @@ import { ChevronRightIcon, MessageSquareTextIcon, MicIcon, PhoneIcon } from "luc
 import { contactSessionIdAtomFamily, conversationIdAtom, errorMessageAtom, hasVapiSecretsAtom, organizationIdAtom, screenAtom, widgetSettingsAtom } from "../../atoms/widget-atoms";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { WidgetFooter } from "../components/widget-footer";
 
 export const WidgetSelectionScreen = () => {
@@ -31,6 +31,12 @@ export const WidgetSelectionScreen = () => {
   );
   const [isPending, setIsPending] = useState(false);
 
+  useEffect(() => {
+    if (contactSessionId && fetchContactSession === null) {
+      setContactSessionId(null);
+    }
+  }, [contactSessionId, fetchContactSession, setContactSessionId]);
+
   const handleNewConversation = async () => {
     if (!organizationId) {
       setScreen("error");
@@ -45,6 +51,12 @@ export const WidgetSelectionScreen = () => {
     
     setIsPending(true);
     try {
+      if (fetchContactSession === null) {
+        setContactSessionId(null);
+        setScreen("auth");
+        return;
+      }
+
       if (
         contactSessionId &&
         fetchContactSession &&

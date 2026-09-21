@@ -5,8 +5,10 @@ import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { Separator } from "@workspace/ui/components/separator";
-import { CopyIcon } from "lucide-react";
+import { CheckIcon, CopyIcon } from "lucide-react";
 import { toast } from "sonner";
+import { useCopyToClipboard } from "@workspace/ui/hooks/use-copy-to-clipboard";
+import { cn } from "@workspace/ui/lib/utils";
 import { IntegrationId, INTEGRATIONS } from "../../constants";
 import Image from "next/image";
 import {
@@ -23,6 +25,7 @@ export const IntegrationsView = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedSnippet, setSelectedSnippet] = useState("");
   const { organization } = useOrganization();
+  const { copied, copy } = useCopyToClipboard();
 
   const handleIntegrationClick = (integrationId: IntegrationId) => {
     if (!organization) {
@@ -36,10 +39,8 @@ export const IntegrationsView = () => {
   };
 
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(organization?.id ?? "");
-      toast.success("Copied to clipboard");
-    } catch {
+    const ok = await copy(organization?.id ?? "");
+    if (!ok) {
       toast.error("Failed to copy to clipboard");
     }
   };
@@ -64,7 +65,7 @@ export const IntegrationsView = () => {
               <Label className="sm:w-34 shrink-0 text-sm md:text-base" htmlFor="organization-id">
                 Organization ID
               </Label>
-              <Input 
+              <Input
                 disabled
                 id="organization-id"
                 readOnly
@@ -72,12 +73,20 @@ export const IntegrationsView = () => {
                 className="flex-1 bg-background font-mono text-xs sm:text-sm"
               />
               <Button
-                className="gap-2 shrink-0"
+                className={cn(
+                  "gap-2 shrink-0 transition-all active:scale-[0.97]",
+                  copied && "border-green-500 text-green-600 dark:text-green-400"
+                )}
                 onClick={handleCopy}
                 size="sm"
+                variant={copied ? "outline" : "default"}
               >
-                <CopyIcon className="size-4" />
-                <span className="hidden sm:inline">Copy</span>
+                {copied ? (
+                  <CheckIcon className="size-4 animate-in zoom-in-50 duration-200" />
+                ) : (
+                  <CopyIcon className="size-4" />
+                )}
+                <span className="hidden sm:inline">{copied ? "Copied" : "Copy"}</span>
               </Button>
             </div>
           </div>
@@ -96,7 +105,7 @@ export const IntegrationsView = () => {
                   key={integration.id}
                   onClick={() => handleIntegrationClick(integration.id)}
                   type="button"
-                  className="flex flex-col items-center justify-center gap-3 rounded-lg border bg-background p-3 sm:p-4 hover:bg-accent sm:flex-row sm:justify-start"
+                  className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border bg-background p-3 transition-all hover:bg-accent hover:shadow-sm active:scale-[0.97] sm:p-4 sm:flex-row sm:justify-start"
                 >
                   <Image
                     alt={integration.title}
@@ -125,11 +134,11 @@ export const IntegrationsDialog = ({
   onOpenChange: (value: boolean) => void;
   snippet: string;
 }) => {
+  const { copied, copy } = useCopyToClipboard();
+
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(snippet);
-      toast.success("Copied to clipboard");
-    } catch {
+    const ok = await copy(snippet);
+    if (!ok) {
       toast.error("Failed to copy to clipboard");
     }
   };
@@ -154,12 +163,21 @@ export const IntegrationsDialog = ({
                 {snippet}
               </pre>
               <Button
-                className="absolute top-2 right-2 sm:top-4 sm:right-6 size-5 sm:size-6 opacity-0 transition-opacity group-hover:opacity-100"
+                aria-label={copied ? "Copied" : "Copy code"}
+                className={cn(
+                  "absolute top-2 right-2 sm:top-4 sm:right-6 size-5 sm:size-6 transition-all active:scale-90",
+                  "sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100",
+                  copied && "sm:opacity-100 bg-green-500 text-white hover:bg-green-600"
+                )}
                 onClick={handleCopy}
                 size="icon"
                 variant="secondary"
               >
-                <CopyIcon className="size-2 sm:size-3" />
+                {copied ? (
+                  <CheckIcon className="size-2 sm:size-3 animate-in zoom-in-50 duration-200" />
+                ) : (
+                  <CopyIcon className="size-2 sm:size-3" />
+                )}
               </Button>
             </div>
           </div>

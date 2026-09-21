@@ -1,0 +1,19 @@
+#next day prompt work not done 
+
+Developer: Review the web app’s main conversation/chat feature and investigate 
+why conversations are not being established. 
+Check the widget integration, inspect Convex for any missing configuration or data issues, 
+and identify why chat creation or related conversation flows are failing. 
+Also investigate integration-time issues: when someone integrates the widget, 
+determine what conversation-related problems appear, how many have already been 
+resolved, and what issues remain. Check whether `ai_credits` is causing replies to be skipped 
+and include that in the investigation.
+
+Begin with a concise checklist (3-7 bullets) of what you will do; 
+keep items conceptual, not implementation-level. 
+Attempt a first pass autonomously unless critical information is missing; 
+if key details or access are unavailable, state the limitation clearly and proceed 
+with the most conservative useful analysis. Before any significant tool call, 
+state one line with the purpose and minimal inputs. After each tool call or 
+substantive inspection step, provide a 1-2 line validation stating what was found 
+and what you will check next.

@@ -53,19 +53,30 @@ export function DotGrid() {
       animationId = requestAnimationFrame(draw)
     }
 
-    resize()
-    initDots()
-    animationId = requestAnimationFrame(draw)
-
     const handleResize = () => {
       resize()
       initDots()
     }
 
-    window.addEventListener("resize", handleResize)
+    const start = () => {
+      resize()
+      initDots()
+      animationId = requestAnimationFrame(draw)
+      window.addEventListener("resize", handleResize)
+    }
+
+    let idleId: number | undefined
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
+    if (typeof window.requestIdleCallback === "function") {
+      idleId = window.requestIdleCallback(start, { timeout: 2000 })
+    } else {
+      timeoutId = setTimeout(start, 200)
+    }
 
     return () => {
       cancelAnimationFrame(animationId)
+      if (idleId !== undefined) window.cancelIdleCallback(idleId)
+      if (timeoutId !== undefined) clearTimeout(timeoutId)
       window.removeEventListener("resize", handleResize)
     }
   }, [])

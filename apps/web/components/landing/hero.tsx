@@ -1,19 +1,8 @@
-"use client"
-
-import { useEffect, useState } from "react"
 import Link from "next/link"
-import { useTheme } from "next-themes"
 import { DotGrid } from "./dot-grid"
 import { ContainerTextFlip } from "@/components/ui/container-text-flip"
 
 export function Hero() {
-  const { resolvedTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => setMounted(true), [])
-
-  const isDark = mounted && resolvedTheme === "dark"
-
   return (
     <section className="relative min-h-screen w-full overflow-hidden bg-gradient-to-b from-background to-muted/30">
       <DotGrid />
@@ -64,15 +53,21 @@ export function Hero() {
                 <div className="w-12"></div>
               </div>
               <div className="relative w-full" style={{ aspectRatio: "1919/974" }}>
-                {mounted && (
-                  <img
-                    alt="Dashboard Preview"
-                    loading="lazy"
-                    className="h-full w-full object-contain"
-                    src={isDark ? "/landing/hero-dashboard.png" : "/landing/hero-dashboard-light.png"}
-                    style={{ color: "transparent" }}
-                  />
-                )}
+                <img
+                  alt="Dashboard Preview"
+                  loading="lazy"
+                  decoding="async"
+                  className="absolute inset-0 h-full w-full object-contain dark:hidden"
+                  src="/landing/hero-dashboard-light.png"
+                />
+                <img
+                  alt=""
+                  aria-hidden
+                  loading="lazy"
+                  decoding="async"
+                  className="absolute inset-0 hidden h-full w-full object-contain dark:block"
+                  src="/landing/hero-dashboard.png"
+                />
               </div>
             </div>
           </div>

@@ -74,7 +74,7 @@ export const WidgetInboxScreen = () => {
                 </div>
                 <div className="flex w-full items-center justify-between gap-x-2">
                   <p className="truncate text-sm">
-                    {conversation.lastMessage?.text}
+                    {(conversation as any).lastMessage?.text ?? ""}
                   </p>
                   <ConversationStatusIcon status={conversation.status} className="shrink-0" />
                 </div>
