@@ -14,7 +14,7 @@
   "dependencies": {
     "@clerk/nextjs": "^7.4.3",
     "@convex-dev/agent": "^0.6.4",
-    "@hookform/resolvers": "^5.4.0",
+    "@hookform/resolvers": "^5.9.1",
     "@sentry/nextjs": "10.57.0",
     "@workspace/backend": "workspace:*",
     "@workspace/math": "workspace:*",
