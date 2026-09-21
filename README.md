@@ -8,6 +8,7 @@
 
 <p align="center">
   <a href="https://aetherlive.ai"><img alt="Website" src="https://img.shields.io/badge/Website-aetherlive.ai-blue?style=flat-square" /></a>
+  <img alt="Pipeline" src="https://github.com/ladaniprem/AetherLive/actions/workflows/pipeline.yml/badge.svg" />
   <img alt="Next.js" src="https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js" />
   <img alt="Convex" src="https://img.shields.io/badge/Backend-Convex-orange?style=flat-square" />
   <img alt="Clerk" src="https://img.shields.io/badge/Auth-Clerk-6C47FF?style=flat-square" />
@@ -327,7 +328,7 @@ VAPI_API_KEY=...
 - [ ] AWS Secrets JSON + IAM least-privilege + Convex prod env vars
 - [ ] Vercel custom domains: `app.aetherlive.com`, `widget.aetherlive.com`, `embed.aetherlive.com`
 - [ ] Rate-limit & CSRF production tuning (`public/messages.ts`)
-- [ ] CI (`.github/workflows/ci.yml`): `pnpm lint` → `typecheck` → `test` → `build` + Vercel previews
+- [x] Pipeline (`.github/workflows/pipeline.yml`): `pnpm lint` → `typecheck` → `test` → `build` → Convex + Vercel deploy (gated on `master`/`main`, secrets: `CONVEX_DEPLOY_KEY`, `VERCEL_TOKEN`) + PR previews
 - [ ] Enhanced analytics dashboard, SLA alerts, and audit logs for Enterprise
 
 ---

@@ -7,11 +7,14 @@ import { components } from "../_generated/api";
 
 export const getOne = query({
     args: {
-        conversationId: v.id("conversations"),
-        contactSessionId: v.id("contactSessions"),
+        conversationId: v.string(),
+        contactSessionId: v.string(),
     },
     handler: async (ctx, args) => {
-        const { conversationId, contactSessionId } = args;
+        // Stale IDs from other deployments decode as foreign-table IDs — treat as missing
+        const conversationId = ctx.db.normalizeId("conversations", args.conversationId);
+        const contactSessionId = ctx.db.normalizeId("contactSessions", args.contactSessionId);
+        if (!conversationId || !contactSessionId) return null;
 
         await checkRateLimitQuery(ctx, "conversationGetOne", contactSessionId);
 
@@ -30,14 +33,19 @@ export const getOne = query({
 
 export const getMany = query({
     args: {
-        contactSessionId: v.id("contactSessions"),
+        contactSessionId: v.string(),
         paginationOpts: paginationOptsValidator,
     },
     handler: async (ctx, args) => {
-        const { contactSessionId } = args;
+        const contactSessionId = ctx.db.normalizeId("contactSessions", args.contactSessionId);
+        if (!contactSessionId) {
+            return { page: [], isDone: true, continueCursor: "" };
+        }
 
         const session = await ctx.db.get("contactSessions", contactSessionId);
-        if (!session) throw new Error("Contact session not found");
+        if (!session) {
+            return { page: [], isDone: true, continueCursor: "" };
+        }
 
         return await ctx.db
             .query("conversations")
@@ -49,11 +57,14 @@ export const getMany = query({
 
 export const create = mutation({
     args: {
-        contactSessionId: v.id("contactSessions"),
+        contactSessionId: v.string(),
         organizationId: v.string(),
     },
     handler: async (ctx, args) => {
-        const { contactSessionId, organizationId } = args;
+        const { organizationId } = args;
+
+        const contactSessionId = ctx.db.normalizeId("contactSessions", args.contactSessionId);
+        if (!contactSessionId) throw new Error("Invalid contact session");
 
         await checkRateLimit(ctx, "contactSessionCreate", organizationId);
 

@@ -218,7 +218,7 @@ export const ContactPanel = () => {
                 value={section.id}
               >
                 <AccordionTrigger
-                  className="flex w-full flex-1 items-start justify-between gap-4 rounded-none bg-accent px-5 py-4 text-left font-medium text-sm outline-none transition-all hover:no-underline disabled:pointer-events-none disabled:opacity-50"
+                  className="flex w-full flex-1 cursor-pointer items-start justify-between gap-4 rounded-none bg-accent px-5 py-4 text-left font-medium text-sm outline-none transition-all hover:bg-accent/60 hover:no-underline active:bg-accent/40 disabled:pointer-events-none disabled:opacity-50"
                 >
                   <div className="flex items-center gap-4">
                     <section.icon className="size-4 shrink-0" />

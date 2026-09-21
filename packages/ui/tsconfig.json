@@ -3,7 +3,9 @@
   "compilerOptions": {
     "paths": {
       "@workspace/ui/*": ["./src/*"]
-    }
+    },
+    "module": "Preserve",
+    "moduleResolution": "Bundler"
   },
   "include": ["."],
   "exclude": ["node_modules", "dist"]

@@ -37,7 +37,7 @@ function mockCtx(overrides: any = {}) {
 }
 
 beforeEach(() => {
-  vi.restoreAllMocks();
+  vi.clearAllMocks();
 });
 
 describe("conversations.getOne", () => {
@@ -92,8 +92,8 @@ describe("conversations.updateStatus", () => {
 
   it("allows status update for own org", async () => {
     const cs = { _id: "cs-1", organizationId: "org-123" };
-    const conv = { _id: "c1", contactSessionId: "cs-1" };
-    const ctx = mockCtx({ db: { get: vi.fn((_t: any, id: string) => id === "c1" ? conv : cs) } });
+    const conv = { _id: "c1", contactSessionId: "cs-1", organizationId: "org-123" };
+    const ctx = mockCtx({ db: { get: vi.fn((_t: any, id: string) => id === "c1" ? conv : cs), patch: vi.fn().mockResolvedValue(null) } });
     const { updateStatus } = await import("./conversations");
     await expect((updateStatus as any).handler(ctx, { conversationId: "c1", status: "resolved" })).resolves.not.toThrow();
   });
@@ -125,13 +125,23 @@ describe("conversations.getMany", () => {
   });
 
   function makeQueryMock(convs: any[], mockGet: any) {
-    const mockPaginate = vi.fn().mockResolvedValue(makePaginateResult(convs));
-    const mockOrder = vi.fn(() => ({ paginate: mockPaginate }));
     const mockWithIndex = vi.fn(() => ({ order: () => ({ first: vi.fn().mockResolvedValue(null) }) }));
+    const mockWithIndexConv = vi.fn((indexName: string, fn: any) => {
+      const eqCalls: any[] = [];
+      const fakeQ: any = { eq: (field: string, value: any) => { eqCalls.push({ field, value }); return fakeQ; } };
+      try { fn(fakeQ); } catch {}
+      const orgId = eqCalls.find(c => c.field === "organizationId")?.value;
+      const filtered = orgId ? convs.filter((c: any) => {
+        const cs = mockGet(null, c.contactSessionId);
+        return cs?.organizationId === orgId;
+      }) : convs;
+      const mockPaginate = vi.fn().mockResolvedValue(makePaginateResult(filtered));
+      return { order: () => ({ paginate: mockPaginate }) };
+    });
 
     return vi.fn((table: string) => {
       if (table === "messages") return { withIndex: mockWithIndex };
-      if (table === "conversations") return { order: mockOrder, filter: () => ({ order: mockOrder }) };
+      if (table === "conversations") return { withIndex: mockWithIndexConv, order: () => ({ paginate: vi.fn().mockResolvedValue(makePaginateResult(convs)) }), filter: () => ({ order: () => ({ paginate: vi.fn().mockResolvedValue(makePaginateResult(convs)) }) }) };
       return {};
     });
   }

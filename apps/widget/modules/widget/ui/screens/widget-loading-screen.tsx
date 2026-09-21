@@ -23,6 +23,7 @@ export const WidgetLoadingScreen = ({ organizationId }: { organizationId: string
   const setVapiSecrets = useSetAtom(vapiSecretsAtom);
 
   const contactSessionId = useAtomValue(contactSessionIdAtomFamily(organizationId || ""));
+  const setContactSessionId = useSetAtom(contactSessionIdAtomFamily(organizationId || ""));
 
   const greetMessage = useAtomValue(widgetSettingsAtom)?.greetMessage;
 
@@ -75,15 +76,19 @@ export const WidgetLoadingScreen = ({ organizationId }: { organizationId: string
     validateContactSession({ contactSessionId })
       .then((result) => {
         console.log("[widget] session valid:", result);
+        if (!result.valid) {
+          setContactSessionId(null);
+        }
         setSessionValid(result.valid);
         setStep("settings");
       })
       .catch((error) => {
         console.error("[widget] session validation failed:", error);
+        setContactSessionId(null);
         setSessionValid(false);
         setStep("settings");
       })
-  }, [step, contactSessionId, validateContactSession, setLoadingMessage]);
+  }, [step, contactSessionId, validateContactSession, setLoadingMessage, setContactSessionId]);
 
   // Step 3: Load Widget Settings
   const widgetSettings = useQuery(api.public.widgetSettings.getByOrganizationId, 

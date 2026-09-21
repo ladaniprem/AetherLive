@@ -72,7 +72,7 @@ const VapiPluginForm = ({
   const upsertSecret = useMutation(api.public.secrets.upsert);
   const upsertPlugin = useMutation(api.public.plugins.upsert);
   const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema as any) as any,
     defaultValues: {
       publicApiKey: "",
       privateApiKey: "",

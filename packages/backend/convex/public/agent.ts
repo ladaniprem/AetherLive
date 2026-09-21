@@ -3,6 +3,11 @@ import { v } from "convex/values";
 import { saveMessage, listMessages } from "@convex-dev/agent";
 import { components } from "../_generated/api";
 
+const AICREDITS_BASE_URL = "https://api.aicredits.in/v1";
+const MODEL = "openai/gpt-4o";
+const SYSTEM_PROMPT =
+    "You are AetherLive, a helpful AI customer support agent. Greet the user warmly and help them with their questions. Keep responses concise and professional.";
+
 export const respond = action({
     args: {
         threadId: v.string(),
@@ -10,9 +15,9 @@ export const respond = action({
     handler: async (ctx, args) => {
         const { threadId } = args;
 
-        const apiKey = process.env.GEMINI_API_KEY;
+        const apiKey = process.env.AI_Credits_API_KEY;
         if (!apiKey) {
-            console.warn("[agent] No GEMINI_API_KEY configured — skipping AI response");
+            console.warn("[agent] No AI_Credits_API_KEY configured — skipping AI response");
             return;
         }
 
@@ -21,46 +26,38 @@ export const respond = action({
             paginationOpts: { numItems: 20, cursor: null },
         });
 
-        const messages = history.page.map((m: any) => ({
-            role: m.role === "user" ? "user" : "model",
-            parts: [{ text: typeof m.content === "string" ? m.content : JSON.stringify(m.content) }],
-        }));
+        const messages = [
+            { role: "system", content: SYSTEM_PROMPT },
+            ...history.page.map((m: any) => ({
+                role: m.role === "assistant" ? "assistant" : "user",
+                content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
+            })),
+        ];
 
-        messages.unshift({
-            role: "user" as const,
-            parts: [{ text: "You are AetherLive, a helpful AI customer support agent. Greet the user warmly and help them with their questions. Keep responses concise and professional." }],
-        });
-
-        messages.push({
-            role: "model" as const,
-            parts: [{ text: "Hi there! I'm AetherLive AI. How can I help you today?" }],
-        });
-
-        const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-            {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    contents: messages,
-                    generationConfig: {
-                        maxOutputTokens: 500,
-                        temperature: 0.7,
-                    },
-                }),
+        const response = await fetch(`${AICREDITS_BASE_URL}/chat/completions`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${apiKey}`,
             },
-        );
+            body: JSON.stringify({
+                model: MODEL,
+                messages,
+                max_tokens: 500,
+                temperature: 0.7,
+            }),
+        });
 
         if (!response.ok) {
-            console.error(`[agent] Gemini API error: ${response.status} ${await response.text()}`);
+            console.error(`[agent] AI Credits API error: ${response.status} ${await response.text()}`);
             return;
         }
 
         const data = await response.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const text = data.choices?.[0]?.message?.content;
 
         if (!text) {
-            console.error("[agent] No response text from Gemini");
+            console.error("[agent] No response text from AI Credits");
             return;
         }
 

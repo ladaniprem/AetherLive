@@ -5,10 +5,13 @@ import { validateCsrfToken } from "../lib/csrf";
 
 export const getOne = query({
     args: {
-        contactSessionId: v.id("contactSessions"),
+        contactSessionId: v.string(),
     },
     handler: async (ctx, args) => {
-        const session = await ctx.db.get("contactSessions", args.contactSessionId);
+        // Stale IDs from other deployments decode as foreign-table IDs — treat as missing
+        const contactSessionId = ctx.db.normalizeId("contactSessions", args.contactSessionId);
+        if (!contactSessionId) return null;
+        const session = await ctx.db.get("contactSessions", contactSessionId);
         if (!session) return null;
         // Only return non-PII fields - the session ID acts as bearer token
         return {
@@ -70,11 +73,13 @@ export const create = mutation({
 
 export const validate = mutation({
     args: {
-        contactSessionId: v.id("contactSessions"),
+        contactSessionId: v.string(),
     },
     handler: async (ctx, args) => {
-        await checkRateLimit(ctx, "contactSessionValidate", args.contactSessionId);
-        const session = await ctx.db.get("contactSessions", args.contactSessionId);
+        const contactSessionId = ctx.db.normalizeId("contactSessions", args.contactSessionId);
+        if (!contactSessionId) return { valid: false };
+        await checkRateLimit(ctx, "contactSessionValidate", contactSessionId);
+        const session = await ctx.db.get("contactSessions", contactSessionId);
         return { valid: !!session };
     },
 });

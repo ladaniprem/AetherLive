@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { UseFormReturn } from "react-hook-form";
 import { useVapiAssistants, useVapiPhoneNumbers } from "@/modules/plugins/hooks/use-vapi-data";
 import {

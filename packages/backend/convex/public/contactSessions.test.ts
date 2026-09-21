@@ -21,6 +21,7 @@ function makeDb(overrides: Record<string, any> = {}) {
     insert: vi.fn(),
     patch: vi.fn(),
     delete: vi.fn(),
+    normalizeId: vi.fn((_table: string, id: string) => id),
     ...overrides,
   };
 }
