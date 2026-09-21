@@ -21,6 +21,6 @@
         "@aws-sdk/client-secrets-manager": "^3.1090.0",
         "@convex-dev/agent": "^0.6.4",
         "@vapi-ai/server-sdk": "^1.2.0",
-        "convex": "^1.40.0"
+        "convex": "^1.46.0"
     }
 }
