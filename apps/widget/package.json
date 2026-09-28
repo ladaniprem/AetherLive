@@ -18,7 +18,7 @@
         "@workspace/backend": "workspace:*",
         "@workspace/math": "workspace:*",
         "@workspace/ui": "workspace:*",
-        "convex": "^1.40.0",
+        "convex": "^1.46.0",
         "countries-and-timezones": "^3.9.0",
         "date-fns": "^4.4.0",
         "jotai": "^2.20.1",
