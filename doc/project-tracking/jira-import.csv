@@ -1,0 +1,47 @@
+Issue Type,Summary,Description,Epic Name,Sprint,Priority,Story Points,Labels,Component
+Epic,Monorepo and tooling,"Turborepo + pnpm workspaces + shared configs. Done = pnpm install/dev/lint/typecheck/build/test green.",Monorepo & tooling,S1,High,5,s1-setup,tooling
+Task,Setup pnpm + turbo + shared configs,"package.json turbo.json pnpm-workspace.yaml packages/*-config",Monorepo & tooling,S1,High,3,s1-setup,tooling
+Task,ESLint Prettier vitest shared setup,"Shared eslint-config typescript-config vitest.shared.ts",Monorepo & tooling,S1,Medium,2,s1-setup,tooling
+Task,pnpm dev runs web(3003)+widget(3001),"turbo dev runs all apps",Monorepo & tooling,S1,Medium,2,s1-setup,tooling
+Epic,Auth & multi-tenancy,"Clerk JWT to Convex orgs proxy.ts AuthGuard OrganizationGuard getOrganizationId.",Auth & multi-tenancy,S2,High,5,s2-auth,apps-web
+Task,Clerk sign-in sign-up + proxy guards,"apps/web/proxy.ts protects routes redirects unauthenticated to sign-in no-org to org-selection",Auth & multi-tenancy,S2,High,3,s2-auth,apps-web
+Task,AuthGuard + OrganizationGuard + org-selection,"modules/auth/ui/components client guards",Auth & multi-tenancy,S2,High,3,s2-auth,apps-web
+Task,getOrganizationId helper everywhere,"convex/lib/auth.ts = orgId ?? org_id ?? o.id. Never read identity.orgId directly.",Auth & multi-tenancy,S2,Highest,3,s2-auth,backend
+Epic,Backend core schema + public API,"10 tables + indexes contactSessions conversations messages org-scoped.",Backend core,S3,High,5,s3-backend,backend
+Task,Schema 10 tables + indexes,"packages/backend/convex/schema.ts contactSessions conversations files widgetSettings plugins secrets rateLimits csrfTokens subscriptions",Backend core,S3,High,3,s3-backend,backend
+Task,contactSessions.create public,"convex/public/contactSessions.ts widget visitor sessions device metadata by_organizationId",Backend core,S3,High,3,s3-backend,backend
+Task,conversations.create + status flow,"convex/public/conversations.ts unresolved/resolved/escalated by_contactSessionId by_status",Backend core,S3,High,3,s3-backend,backend
+Task,messages.create + realtime subscription,"convex/public/messages.ts + private/messages.ts live queries no polling",Backend core,S3,High,3,s3-backend,backend
+Epic,Widget + Embed,"Embeddable widget single script tag realtime chat.",Widget + Embed,S4,High,5,s4-widget,apps-widget
+Task,Widget chat flow session-convo-message-AI,"apps/widget contactSessions.create to conversations.create to messages.create to AI action",Widget + Embed,S4,Highest,5,s4-widget,apps-widget
+Task,Embed snippet script tag,"apps/embed lightweight script organizationId param",Widget + Embed,S4,Medium,2,s4-widget,apps-embed
+Task,Fix widget cannot establish conversation,"Open issue AGENTS.md #1 trace widget chat flow",Widget + Embed,S4,Highest,3,s4-widget-bug,apps-widget
+Epic,Dashboard inbox,"Unified inbox chat email voice realtime sentiment routing.",Dashboard inbox,S5,High,5,s5-dashboard,apps-web
+Task,Inbox views unresolved resolved escalated,"apps/web/modules/dashboard Conversations inbox",Dashboard inbox,S5,High,3,s5-dashboard,apps-web
+Task,Human reply + realtime push + sentiment escalate,"Human reply pushes via Convex realtime sentiment auto-escalates",Dashboard inbox,S5,High,3,s5-dashboard,apps-web
+Epic,AI agent + RAG + files,"Convex Agent RAG over KB files docs FAQs file storage indexed.",AI agent + RAG,S6,High,5,s6-ai,backend
+Task,Convex Agent RAG over KB,"convex/public/agent.ts searches KB + files streams answer <2s",AI agent + RAG,S6,Highest,5,s6-ai,backend
+Task,File upload to Convex storage to index,"apps/web/modules/files + convex/private/files.ts",AI agent + RAG,S6,High,3,s6-ai,apps-web
+Task,Smart ticket routing auto-categorize,"AI categorizes routes to team agent no manual triage",AI agent + RAG,S6,Medium,3,s6-ai,backend
+Epic,Customization + settings,"Widget colors position greeting per-org settings.",Customization,S7,High,5,s7-custom,apps-web
+Task,Widget customization save,"apps/web/modules/customization + convex/private/widgetSettings.ts",Customization,S7,High,3,s7-custom,apps-web
+Task,Fix customization save button error,"Open issue AGENTS.md #2 suspect zodResolver zod v3/v4 mismatch",Customization,S7,Highest,2,s7-custom-bug,apps-web
+Task,Settings page per-org,"apps/web/modules/settings",Customization,S7,Medium,2,s7-custom,apps-web
+Epic,Integrations + voice,"Plugins secrets Vapi voice AWS Secrets Manager.",Integrations + voice,S8,High,5,s8-integrations,backend
+Task,Plugins CRUD orgId required,"convex/private/plugins.ts + public/plugins.ts modules/plugins",Integrations + voice,S8,High,3,s8-integrations,backend
+Task,Secrets upsert org-scoped,"convex/private/secrets.ts + public/secrets.ts fix orgless fallback",Integrations + voice,S8,High,2,s8-integrations,backend
+Task,Vapi voice via AWS Secrets Manager,"convex/private/vapi.ts JSON secret VAPI_PUBLIC_KEY+VAPI_PRIVATE_KEY 5-min cache modules/integrations",Integrations + voice,S8,High,3,s8-integrations,backend
+Epic,Billing + feature gating,"Clerk Billing PricingTable webhook subscriptions requireFeature.",Billing,S9,High,5,s9-billing,apps-web
+Task,Clerk Billing PricingTable + webhook to subscriptions,"modules/billing + convex/private/subscriptions.ts plans free/pro/enterprise",Billing,S9,High,3,s9-billing,apps-web
+Task,requireFeature gating,"convex/lib/subscription.ts gates aiCustomerSupport knowledgeBase widgetCustomization integrations aiVoiceAgent",Billing,S9,High,3,s9-billing,backend
+Epic,Landing + growth,"Hero features live-demo pricing FAQ testimonials SEO.",Landing,S10,High,5,s10-landing,apps-web
+Task,Hero + features grid + live-demo,"apps/web/components/landing hero features live-demo typing indicators",Landing,S10,High,3,s10-landing,apps-web
+Task,Pricing + testimonials + FAQ + footer,"Starter Free Pro $20 Enterprise Custom",Landing,S10,Medium,2,s10-landing,apps-web
+Epic,Testing + security,"vitest rate-limit CSRF Sentry remove demo throw.",Testing + security,S11,High,5,s11-qa,backend
+Task,Backend vitest suites,"conversations.test files.test rateLimit.test contactSessions.test messages.test",Testing + security,S11,High,3,s11-qa,backend
+Task,Rate-limit + CSRF production tuning,"convex/lib/rateLimit.ts csrf.ts public/messages.ts",Testing + security,S11,High,3,s11-qa,backend
+Task,Sentry tunnel + replay + remove users throw,"apps/web sentry tunnel Session Replay remove users.ts Tracking Test throw",Testing + security,S11,Medium,2,s11-qa,apps-web
+Epic,CI/CD + production,"GitHub pipeline + Bitbucket mirror Convex prod Vercel 3-project domains.",CI/CD + production,S12,High,5,s12-release,devops
+Task,GitHub pipeline lint-typecheck-test-build-deploy,".github/workflows/pipeline.yml gated on master/main CONVEX_DEPLOY_KEY VERCEL_TOKEN",CI/CD + production,S12,High,3,s12-release,devops
+Task,Bitbucket Pipelines mirror + Jira smart commits,"bitbucket-pipelines.yml branch naming AL-123 smart commits auto-transition",CI/CD + production,S12,High,2,s12-release,devops
+Task,Prod Convex prod Vercel 3-project domains Clerk prod,"app.aetherlive.com widget embed Convex prod AWS Secrets JSON IAM Clerk prod instance",CI/CD + production,S12,High,3,s12-release,devops

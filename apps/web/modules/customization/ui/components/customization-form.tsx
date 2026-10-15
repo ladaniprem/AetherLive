@@ -28,6 +28,9 @@ import { api } from "@workspace/backend/_generated/api";
 import { VapiFormFields } from "./vapi-form-fields";
 import { FormSchema } from "../../types";
 import { widgetSettingsSchema } from "../../schemas";
+import { CHAT_BACKGROUNDS } from "@workspace/ui/lib/appearance";
+import { cn } from "@workspace/ui/lib/utils";
+import { CheckIcon } from "lucide-react";
 
 type WidgetSettings = Doc<"widgetSettings">;
 
@@ -56,6 +59,7 @@ export const CustomizationForm = ({
         assistantId: initialData?.vapiSettings.assistantId || "",
         phoneNumber: initialData?.vapiSettings.phoneNumber || "",
       },
+      chatBackground: initialData?.chatBackground || "default",
     },
   });
 
@@ -76,6 +80,7 @@ export const CustomizationForm = ({
         greetMessage: values.greetMessage,
         defaultSuggestions: values.defaultSuggestions,
         vapiSettings,
+        chatBackground: values.chatBackground,
       });
 
       toast.success("Widget settings saved");
@@ -181,6 +186,58 @@ export const CustomizationForm = ({
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Widget Appearance</CardTitle>
+            <CardDescription>
+              Brand color and chat background your customers see
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <FormField
+              control={form.control}
+              name="chatBackground"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Chat background</FormLabel>
+                  <div className="grid grid-cols-3 gap-3 pt-1">
+                    {CHAT_BACKGROUNDS.map((bg) => {
+                      const active = field.value === bg.id;
+                      return (
+                        <button
+                          key={bg.id}
+                          onClick={() => field.onChange(bg.id)}
+                          type="button"
+                          className={cn(
+                            "relative h-20 overflow-hidden rounded-lg border transition-all",
+                            active
+                              ? "border-foreground ring-2 ring-foreground/20"
+                              : "hover:border-muted-foreground",
+                          )}
+                        >
+                          <span
+                            className="absolute inset-0 bg-muted"
+                            style={bg.style}
+                          />
+                          {active && (
+                            <span className="absolute top-1.5 right-1.5 flex size-5 items-center justify-center rounded-full bg-foreground">
+                              <CheckIcon className="size-3 text-background" />
+                            </span>
+                          )}
+                          <span className="absolute inset-x-0 bottom-0 bg-background/80 py-0.5 text-center text-xs font-medium backdrop-blur-sm">
+                            {bg.name}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </CardContent>
         </Card>
 

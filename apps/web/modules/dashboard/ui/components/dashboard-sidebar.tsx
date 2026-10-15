@@ -3,9 +3,11 @@
 import { OrganizationSwitcher, UserButton } from "@clerk/nextjs";
 import {
   CreditCardIcon,
+  GemIcon,
   InboxIcon,
   LayoutDashboardIcon,
   LibraryBigIcon,
+  LockIcon,
   Mic,
   PaletteIcon,
   CogIcon,
@@ -28,6 +30,7 @@ import {
 } from "@workspace/ui/components/sidebar";
 import { ThemeToggle } from "@workspace/ui/components/theme-toggle";
 import { cn } from "@workspace/ui/lib/utils";
+import { useSubscription } from "@/modules/billing/lib/use-subscription";
 
 const customerSupportItems = [
   {
@@ -75,6 +78,11 @@ const accountItems = [
 
 export const DashboardSidebar = () => {
   const pathname = usePathname();
+  const subscription = useSubscription();
+  // Free plan is a preview: every product area is Pro-only, so lock the nav
+  // items and point people at billing instead of letting them hit a paywall
+  // on every page.
+  const isFree = subscription?.plan === "free";
 
   const isActive = (url: string) => {
     if (url === "/") {
@@ -83,6 +91,9 @@ export const DashboardSidebar = () => {
 
     return pathname.startsWith(url);
   };
+
+  const lockIfFree = (locked: boolean) =>
+    locked && isFree ? "opacity-60" : undefined;
 
   return (
     <Sidebar className="group" collapsible="icon">
@@ -121,13 +132,15 @@ export const DashboardSidebar = () => {
                     asChild
                     isActive={isActive(item.url)}
                     className={cn(
-                      isActive(item.url) && "bg-gradient-to-b from-sidebar-primary to-[#0b63f3]! text-sidebar-primary-foreground! hover:to-[#0b63f3]/90!"
+                      isActive(item.url) && "bg-sidebar-primary! text-sidebar-primary-foreground! hover:bg-sidebar-primary/90!",
+                      lockIfFree(true)
                     )}
                     tooltip={item.title}
                   >
                     <Link href={item.url}>
                       <item.icon className="size-4" />
                       <span>{item.title}</span>
+                      {isFree && <LockIcon className="ml-auto size-3.5" />}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -147,13 +160,15 @@ export const DashboardSidebar = () => {
                     asChild
                     isActive={isActive(item.url)}
                     className={cn(
-                      isActive(item.url) && "bg-gradient-to-b from-sidebar-primary to-[#0b63f3]! text-sidebar-primary-foreground! hover:to-[#0b63f3]/90!"
+                      isActive(item.url) && "bg-sidebar-primary! text-sidebar-primary-foreground! hover:bg-sidebar-primary/90!",
+                      lockIfFree(true)
                     )}
                     tooltip={item.title}
                   >
                     <Link href={item.url}>
                       <item.icon className="size-4" />
                       <span>{item.title}</span>
+                      {isFree && <LockIcon className="ml-auto size-3.5" />}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -173,7 +188,7 @@ export const DashboardSidebar = () => {
                     asChild
                     isActive={isActive(item.url)}
                     className={cn(
-                      isActive(item.url) && "bg-gradient-to-b from-sidebar-primary to-[#0b63f3]! text-sidebar-primary-foreground! hover:to-[#0b63f3]/90!"
+                      isActive(item.url) && "bg-sidebar-primary! text-sidebar-primary-foreground! hover:bg-sidebar-primary/90!"
                     )}
                     tooltip={item.title}
                   >
@@ -189,6 +204,15 @@ export const DashboardSidebar = () => {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
+        {isFree && (
+          <Link
+            className="mb-2 flex items-center gap-2 rounded-lg border border-dashed px-3 py-2 text-xs group-data-[collapsible=icon]:hidden"
+            href="/billing"
+          >
+            <GemIcon className="size-4 shrink-0" />
+            <span>Free plan — upgrade to Pro</span>
+          </Link>
+        )}
         <SidebarMenu>
           <SidebarMenuItem>
             <div className="flex items-center justify-between group-data-[collapsible=icon]:justify-center">

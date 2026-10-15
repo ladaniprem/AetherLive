@@ -1,6 +1,7 @@
 import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getOrganizationId } from "../lib/auth";
+import { canUseFeature, requireFeature } from "../lib/subscription";
 
 export const upsert = mutation({
     args: {
@@ -17,6 +18,8 @@ export const upsert = mutation({
         if (!organizationId) {
             throw new Error("Missing organization");
         }
+
+        await requireFeature(ctx, organizationId, "integrations");
 
         const existing = await ctx.db
             .query("secrets")
@@ -39,6 +42,12 @@ export const upsert = mutation({
     },
 });
 
+/**
+ * The widget needs the Vapi *public* key to place a voice call. On a free
+ * org it returns null instead of throwing so the widget still boots — the
+ * paywall screen (driven by `public.organizations.getAccess`) is what stops
+ * the visitor, not a crashed loader.
+ */
 export const getVapiSecrets = query({
     args: {
         organizationId: v.optional(v.string()),
@@ -46,14 +55,15 @@ export const getVapiSecrets = query({
     handler: async (ctx, args) => {
         const { organizationId } = args;
 
+        if (!(await canUseFeature(ctx, organizationId, "aiVoiceAgent"))) {
+            return null;
+        }
+
         const secret = organizationId
             ? await ctx.db
                   .query("secrets")
-                  .filter((q) =>
-                      q.and(
-                          q.eq(q.field("service"), "vapi"),
-                          q.eq(q.field("organizationId"), organizationId),
-                      ),
+                  .withIndex("by_service_and_organizationId", (q) =>
+                      q.eq("service", "vapi").eq("organizationId", organizationId),
                   )
                   .first()
             : await ctx.db

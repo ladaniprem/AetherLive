@@ -88,7 +88,10 @@ export const AIResponse = memo(
   ({ className, options, children, ...props }: AIResponseProps) => (
     <div
       className={cn(
-        "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+        "w-full min-w-0 max-w-full overflow-hidden break-words [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+        "[&_pre]:max-w-full [&_pre]:overflow-x-auto",
+        "[&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto",
+        "[&_a]:break-all",
         className,
       )}
       {...props}

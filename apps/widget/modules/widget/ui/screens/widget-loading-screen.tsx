@@ -2,12 +2,12 @@
 import { useEffect, useState } from "react";
 import { LoaderIcon } from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
-import { contactSessionIdAtomFamily, csrfTokenAtom, errorMessageAtom, loadingMessageAtom, organizationIdAtom, screenAtom, vapiSecretsAtom, widgetSettingsAtom } from "@/modules/widget/atoms/widget-atoms";
+import { canChatAtom, contactSessionIdAtomFamily, csrfTokenAtom, errorMessageAtom, loadingMessageAtom, organizationIdAtom, screenAtom, vapiSecretsAtom, widgetSettingsAtom } from "@/modules/widget/atoms/widget-atoms";
 import { WidgetHeader } from "@/modules/widget/ui/components/widget-header";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
 
-type InitStep = "org" | "session" | "settings" | "vapi" | "done";
+type InitStep = "org" | "access" | "session" | "settings" | "vapi" | "done";
 
 export const WidgetLoadingScreen = ({ organizationId }: { organizationId: string | null }) => {
   const [step, setStep] = useState<InitStep>("org")
@@ -21,9 +21,11 @@ export const WidgetLoadingScreen = ({ organizationId }: { organizationId: string
   const setScreen = useSetAtom(screenAtom);
   const setCsrfToken = useSetAtom(csrfTokenAtom);
   const setVapiSecrets = useSetAtom(vapiSecretsAtom);
+  const setCanChat = useSetAtom(canChatAtom);
 
   const contactSessionId = useAtomValue(contactSessionIdAtomFamily(organizationId || ""));
   const setContactSessionId = useSetAtom(contactSessionIdAtomFamily(organizationId || ""));
+  const canChat = useAtomValue(canChatAtom);
 
   const greetMessage = useAtomValue(widgetSettingsAtom)?.greetMessage;
 
@@ -48,14 +50,36 @@ export const WidgetLoadingScreen = ({ organizationId }: { organizationId: string
 
     if (orgValidation.valid) {
       setOrganizationId(organizationId);
-      setStep("session");
+      setStep("access");
     } else {
       setErrorMessage(orgValidation.reason || "Invalid configuration");
       setScreen("error");
     }
   }, [step, organizationId, orgValidation, setErrorMessage, setScreen, setOrganizationId, setLoadingMessage]);
 
-  // Step 2: Validate session
+  // Step 2: Check the org's plan. A free org gets the paywall screen — the
+  // backend rejects every chat call anyway, so checking here just avoids
+  // showing a visitor a broken conversation.
+  const access = useQuery(
+    api.public.organizations.getAccess,
+    step === "access" && organizationId ? { organizationId } : "skip",
+  );
+  useEffect(() => {
+    if (step !== "access") {
+      return;
+    }
+
+    setLoadingMessage("Checking availability...");
+
+    if (access === undefined) {
+      return;
+    }
+
+    setCanChat(access.canChat);
+    setStep("session");
+  }, [step, access, setCanChat, setStep, setLoadingMessage]);
+
+  // Step 3: Validate session
   const validateContactSession = useMutation(api.public.contactSessions.validate);
   useEffect(() => {
     if (step !== "session") {
@@ -90,7 +114,7 @@ export const WidgetLoadingScreen = ({ organizationId }: { organizationId: string
       })
   }, [step, contactSessionId, validateContactSession, setLoadingMessage, setContactSessionId]);
 
-  // Step 3: Load Widget Settings
+  // Step 4: Load Widget Settings
   const widgetSettings = useQuery(api.public.widgetSettings.getByOrganizationId, 
     organizationId ? {
       organizationId,
@@ -115,7 +139,7 @@ export const WidgetLoadingScreen = ({ organizationId }: { organizationId: string
     setLoadingMessage,
   ]);
 
-  // Step 4: Load Vapi secrets (query, reactive)
+  // Step 5: Load Vapi secrets (query, reactive)
   const vapiSecrets = useQuery(
     api.public.secrets.getVapiSecrets,
     step === "vapi" && organizationId ? { organizationId } : "skip",
@@ -145,9 +169,14 @@ export const WidgetLoadingScreen = ({ organizationId }: { organizationId: string
       return;
     }
 
+    if (canChat === false) {
+      setScreen("paywall");
+      return;
+    }
+
     const hasValidSession = contactSessionId && sessionValid;
     setScreen(hasValidSession ? "selection" : "auth");
-  }, [step, contactSessionId, sessionValid, setScreen]);
+  }, [step, canChat, contactSessionId, sessionValid, setScreen]);
 
   return (
     <>

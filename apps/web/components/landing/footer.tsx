@@ -63,6 +63,11 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/docs" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+                  Documentation
+                </Link>
+              </li>
+              <li>
                 <Link href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                   Blog
                 </Link>
@@ -102,17 +107,17 @@ export function Footer() {
             </p>
             <ul className="flex list-none flex-col gap-3">
               <li>
-                <Link href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+                <Link href="/privacy" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+                <Link href="/terms" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                   Terms of Service
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+                <Link href="/privacy#cookies" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                   Cookie Policy
                 </Link>
               </li>

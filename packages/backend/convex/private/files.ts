@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 import { Doc, Id } from "../_generated/dataModel";
 import { getOrganizationId } from "../lib/auth";
+import { requireFeature } from "../lib/subscription";
 
 export type PublicFile = {
     id: Id<"files">;
@@ -25,6 +26,12 @@ export const list = query({
         }
 
         const organizationId = getOrganizationId(identity);
+
+        if (!organizationId) {
+            throw new Error("Not authorized");
+        }
+
+        await requireFeature(ctx, organizationId, "knowledgeBase");
 
         const result = await ctx.db
             .query("files")
@@ -66,10 +73,19 @@ export const addFile = action({
             throw new Error("Not authenticated");
         }
 
+        const organizationId = getOrganizationId(identity);
+        if (!organizationId) {
+            throw new Error("Not authorized");
+        }
+
+        const { internal } = await import("../_generated/api");
+        await ctx.runQuery(internal.entitlements.assertFeature, {
+            organizationId,
+            feature: "knowledgeBase",
+        });
+
         const blob = new Blob([bytes], { type: mimeType });
         const storageId = await ctx.storage.store(blob);
-
-const organizationId = getOrganizationId(identity);
 
         const fileId = await ctx.runMutation("_saveFile:saveFile" as any, {
             name: filename,
@@ -77,7 +93,7 @@ const organizationId = getOrganizationId(identity);
             size: bytes.byteLength,
             storageId,
             category,
-            ...(organizationId ? { organizationId } : {}),
+            organizationId,
         });
 
         return fileId;
@@ -96,14 +112,21 @@ export const deleteFile = mutation({
             throw new Error("Not authenticated");
         }
 
+        const organizationId = getOrganizationId(identity);
+        if (!organizationId) {
+            throw new Error("Not authorized");
+        }
+
         const file = await ctx.db.get("files", entryId);
         if (!file) {
             throw new Error("File not found");
         }
 
-if (file.organizationId !== (getOrganizationId(identity))) {
+        if (file.organizationId !== organizationId) {
             throw new Error("Not authorized");
         }
+
+        await requireFeature(ctx, organizationId, "knowledgeBase");
 
         await ctx.storage.delete(file.storageId);
         await ctx.db.delete("files", entryId);

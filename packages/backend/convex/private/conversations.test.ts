@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { withFreePlan, withSubscription } from "../../test-utils/subscription";
 
 vi.mock("../_generated/server", () => ({
   query: (def: any) => def,
@@ -50,11 +51,20 @@ describe("conversations.getOne", () => {
   it("returns conversation for own org", async () => {
     const cs = { _id: "cs-1", organizationId: "org-123" };
     const conv = { _id: "c1", contactSessionId: "cs-1", threadId: "t-1" };
-    const ctx = mockCtx({ db: { get: vi.fn((_t: any, id: string) => id === "c1" ? conv : cs) } });
+    const ctx = withSubscription(mockCtx({ db: { get: vi.fn((_t: any, id: string) => id === "c1" ? conv : cs) } }));
 
     const { getOne } = await import("./conversations");
     const result = await (getOne as any).handler(ctx, { conversationId: "c1" });
     expect(result).toEqual(conv);
+  });
+
+  it("throws PLAN_REQUIRED on the free plan", async () => {
+    const cs = { _id: "cs-1", organizationId: "org-123" };
+    const conv = { _id: "c1", contactSessionId: "cs-1", threadId: "t-1" };
+    const ctx = withFreePlan(mockCtx({ db: { get: vi.fn((_t: any, id: string) => id === "c1" ? conv : cs) } }));
+
+    const { getOne } = await import("./conversations");
+    await expect((getOne as any).handler(ctx, { conversationId: "c1" })).rejects.toThrow(/PLAN_REQUIRED/);
   });
 
   it("returns null for other org conversation", async () => {
@@ -93,9 +103,17 @@ describe("conversations.updateStatus", () => {
   it("allows status update for own org", async () => {
     const cs = { _id: "cs-1", organizationId: "org-123" };
     const conv = { _id: "c1", contactSessionId: "cs-1", organizationId: "org-123" };
-    const ctx = mockCtx({ db: { get: vi.fn((_t: any, id: string) => id === "c1" ? conv : cs), patch: vi.fn().mockResolvedValue(null) } });
+    const ctx = withSubscription(mockCtx({ db: { get: vi.fn((_t: any, id: string) => id === "c1" ? conv : cs), patch: vi.fn().mockResolvedValue(null) } }));
     const { updateStatus } = await import("./conversations");
     await expect((updateStatus as any).handler(ctx, { conversationId: "c1", status: "resolved" })).resolves.not.toThrow();
+  });
+
+  it("throws PLAN_REQUIRED on the free plan", async () => {
+    const cs = { _id: "cs-1", organizationId: "org-123" };
+    const conv = { _id: "c1", contactSessionId: "cs-1", organizationId: "org-123" };
+    const ctx = withFreePlan(mockCtx({ db: { get: vi.fn((_t: any, id: string) => id === "c1" ? conv : cs), patch: vi.fn() } }));
+    const { updateStatus } = await import("./conversations");
+    await expect((updateStatus as any).handler(ctx, { conversationId: "c1", status: "resolved" })).rejects.toThrow(/PLAN_REQUIRED/);
   });
 
   it("rejects status update for other org", async () => {
@@ -155,7 +173,7 @@ describe("conversations.getMany", () => {
     ];
 
     const mockGet = vi.fn((_t: any, id: string) => id === "cs-1" ? myCs : id === "cs-2" ? otherCs : null);
-    const ctx = mockCtx({ db: { query: makeQueryMock(convs, mockGet), get: mockGet } });
+    const ctx = withSubscription(mockCtx({ db: { query: makeQueryMock(convs, mockGet), get: mockGet } }));
 
     const { getMany } = await import("./conversations");
     const result = await (getMany as any).handler(ctx, { paginationOpts: { numItems: 10, cursor: null } });
@@ -163,10 +181,21 @@ describe("conversations.getMany", () => {
     expect(result.page[0]._id).toBe("c1");
   });
 
+  it("throws PLAN_REQUIRED on the free plan", async () => {
+    const myCs = { _id: "cs-1", organizationId: "org-123" };
+    const convs = [{ _id: "c1", contactSessionId: "cs-1", threadId: "t-1", status: "unresolved" }];
+    const mockGet = vi.fn((_t: any, id: string) => (id === "cs-1" ? myCs : null));
+    const ctx = withFreePlan(mockCtx({ db: { query: makeQueryMock(convs, mockGet), get: mockGet } }));
+
+    const { getMany } = await import("./conversations");
+    await expect((getMany as any).handler(ctx, { paginationOpts: { numItems: 10, cursor: null } }))
+      .rejects.toThrow(/PLAN_REQUIRED/);
+  });
+
   it("excludes conversations with missing contact session", async () => {
     const convs = [{ _id: "c1", contactSessionId: "cs-missing", threadId: "t-1" }];
     const mockGet = vi.fn().mockResolvedValue(null);
-    const ctx = mockCtx({ db: { query: makeQueryMock(convs, mockGet), get: mockGet } });
+    const ctx = withSubscription(mockCtx({ db: { query: makeQueryMock(convs, mockGet), get: mockGet } }));
 
     const { getMany } = await import("./conversations");
     const result = await (getMany as any).handler(ctx, { paginationOpts: { numItems: 10, cursor: null } });

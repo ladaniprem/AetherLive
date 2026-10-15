@@ -1,34 +1,69 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 
+async function verifyRazorpaySignature(raw: string, signature: string, secret: string): Promise<boolean> {
+    const enc = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+        "raw",
+        enc.encode(secret),
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"],
+    );
+    const sig = await crypto.subtle.sign("HMAC", key, enc.encode(raw));
+    const expected = Array.from(new Uint8Array(sig))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+    return expected === signature;
+}
+
 const http = httpRouter();
 
 http.route({
-    path: "/api/clerk-webhook",
+    path: "/api/razorpay-webhook",
     method: "POST",
     handler: httpAction(async (ctx, req) => {
-        const body = await req.json();
-        const { type, data } = body;
+        const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+        if (!secret) return new Response("webhook not configured", { status: 500 });
 
-        if (type === "organization.subscription.created" || type === "organization.subscription.updated") {
-            const { id, plan, status, organization_id, current_period_end } = data;
+        const raw = await req.text();
+        const signature = req.headers.get("x-razorpay-signature") ?? "";
+        const valid = await verifyRazorpaySignature(raw, signature, secret);
+        if (!valid) {
+            return new Response("invalid signature", { status: 401 });
+        }
 
-            await ctx.runMutation("private/subscriptions:setPlan" as any, {
-                plan: plan ?? "pro",
-                status: status ?? "active",
-                stripeSubscriptionId: id,
-                currentPeriodEnd: current_period_end ? current_period_end * 1000 : undefined,
-                organizationId: organization_id,
+        const event = JSON.parse(raw) as {
+            event: string;
+            payload: any;
+        };
+
+        const notes = event.payload?.subscription?.entity?.notes
+            ?? event.payload?.payment?.entity?.notes;
+        const organizationId: string | undefined = notes?.organizationId;
+        if (!organizationId) return new Response(null, { status: 200 });
+
+        if (
+            event.event === "subscription.authenticated" ||
+            event.event === "subscription.charged"
+        ) {
+            const entity = event.payload.subscription.entity;
+            await ctx.runMutation("private/razorpay:activateFromWebhook" as any, {
+                organizationId,
+                razorpaySubscriptionId: entity.id,
+                razorpayCustomerId: entity.customer_id,
+                currentPeriodEnd: entity.current_end
+                    ? entity.current_end * 1000
+                    : undefined,
             });
         }
 
-        if (type === "organization.subscription.deleted" || type === "organization.subscription.canceled") {
-            const { organization_id } = data;
-
-            await ctx.runMutation("private/subscriptions:setPlan" as any, {
-                plan: "free",
-                status: "canceled",
-                organizationId: organization_id,
+        if (
+            event.event === "subscription.cancelled" ||
+            event.event === "subscription.completed"
+        ) {
+            await ctx.runMutation("private/razorpay:cancelFromWebhook" as any, {
+                organizationId,
             });
         }
 

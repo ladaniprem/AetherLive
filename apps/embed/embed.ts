@@ -29,10 +29,14 @@ import { chatBubbleIcon, closeIcon } from './icons';
     }
   }
   
-  // Exit if no organization ID
+  // Exit if no organization ID — never attribute chats to a fallback org
   if (!organizationId) {
-    console.warn('AetherLive Widget: data-organization-id not set, using default');
-    organizationId = EMBED_CONFIG.DEFAULT_ORG_ID;
+    console.error(
+      'AetherLive Widget: missing data-organization-id on the script tag.\n' +
+      'Expected: <script src=".../embed/widget.js" data-organization-id="org_..."></script>\n' +
+      'Copy the snippet from Dashboard → Integrations.'
+    );
+    return;
   }
   
   function init() {

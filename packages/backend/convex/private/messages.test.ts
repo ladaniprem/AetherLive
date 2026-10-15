@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { withFreePlan, withSubscription } from "../../test-utils/subscription";
 
 vi.mock("../_generated/server", () => ({
   query: (def: any) => def,
@@ -8,6 +9,12 @@ vi.mock("../_generated/server", () => ({
 
 vi.mock("../_generated/api", () => ({
   components: { agent: {} },
+  internal: {
+    entitlements: {
+      assertFeature: "entitlements:assertFeature",
+      getPlanState: "entitlements:getPlanState",
+    },
+  },
 }));
 
 vi.mock("convex/server", () => ({
@@ -57,10 +64,17 @@ describe("messages.getMany", () => {
   });
 
   it("returns messages for authenticated user", async () => {
-    const ctx = mockCtx();
+    const ctx = withSubscription(mockCtx());
     const { getMany } = await import("./messages");
     const result = await (getMany as any).handler(ctx, { threadId: "t-1", paginationOpts: { numItems: 10, cursor: null } });
     expect(result).toBeDefined();
+  });
+
+  it("throws PLAN_REQUIRED on the free plan", async () => {
+    const ctx = withFreePlan(mockCtx());
+    const { getMany } = await import("./messages");
+    await expect((getMany as any).handler(ctx, { threadId: "t-1", paginationOpts: { numItems: 10, cursor: null } }))
+      .rejects.toThrow(/PLAN_REQUIRED/);
   });
 });
 
@@ -88,8 +102,14 @@ describe("messages.create", () => {
   });
 
   it("allows message creation for own org", async () => {
-    const ctx = mockCtx({ db: { get: vi.fn((_t: any, id: string) => id === "c1" ? CONV : CS) } });
+    const ctx = withSubscription(mockCtx({ db: { get: vi.fn((_t: any, id: string) => id === "c1" ? CONV : CS) } }));
     const { create } = await import("./messages");
     await expect((create as any).handler(ctx, { conversationId: "c1", prompt: "Hi" })).resolves.not.toThrow();
+  });
+
+  it("throws PLAN_REQUIRED on the free plan", async () => {
+    const ctx = withFreePlan(mockCtx({ db: { get: vi.fn((_t: any, id: string) => id === "c1" ? CONV : CS) } }));
+    const { create } = await import("./messages");
+    await expect((create as any).handler(ctx, { conversationId: "c1", prompt: "Hi" })).rejects.toThrow(/PLAN_REQUIRED/);
   });
 });

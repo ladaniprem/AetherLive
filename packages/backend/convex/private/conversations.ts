@@ -1,9 +1,10 @@
 import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
-import { listMessages } from "@convex-dev/agent";
+import { createThread, listMessages, updateThreadMetadata } from "@convex-dev/agent";
 import { components } from "../_generated/api";
 import { getOrganizationId } from "../lib/auth";
+import { requireFeature } from "../lib/subscription";
 
 export const getMany = query({
     args: {
@@ -27,6 +28,8 @@ const organizationId = getOrganizationId(identity);
         if (!organizationId) {
             return { page: [], continueCursor: "", isDone: true };
         }
+
+        await requireFeature(ctx, organizationId, "aiCustomerSupport");
 
         const result = args.status
             ? await ctx.db
@@ -102,7 +105,92 @@ const organizationId = getOrganizationId(identity);
             return null;
         }
 
+        await requireFeature(ctx, organizationId, "aiCustomerSupport");
+
         return conversation;
+    },
+});
+
+export const remove = mutation({
+    args: {
+        conversationId: v.id("conversations"),
+    },
+    handler: async (ctx, args) => {
+        const { conversationId } = args;
+
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) {
+            throw new Error("Not authenticated");
+        }
+
+        const organizationId = getOrganizationId(identity);
+        if (!organizationId) throw new Error("Not authorized");
+
+        const conversation = await ctx.db.get("conversations", conversationId);
+        if (!conversation) {
+            throw new Error("Conversation not found");
+        }
+
+        if (conversation.organizationId !== organizationId) {
+            throw new Error("Not authorized");
+        }
+
+        await requireFeature(ctx, organizationId, "aiCustomerSupport");
+
+        // Unlink the visitor session if it points at this conversation
+        const session = await ctx.db.get("contactSessions", conversation.contactSessionId);
+        if (session?.conversationId === conversationId) {
+            await ctx.db.patch(session._id, { conversationId: undefined });
+        }
+
+        // Archive the AI thread (history becomes inaccessible); doc delete below
+        try {
+            await updateThreadMetadata(ctx, components.agent, {
+                threadId: conversation.threadId,
+                patch: { status: "archived" },
+            });
+        } catch (error) {
+            console.warn("[conversations.remove] thread archive failed:", error);
+        }
+
+        await ctx.db.delete(conversationId);
+        return { deleted: true };
+    },
+});
+
+export const clearMessages = mutation({
+    args: {
+        conversationId: v.id("conversations"),
+    },
+    handler: async (ctx, args) => {
+        const { conversationId } = args;
+
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) {
+            throw new Error("Not authenticated");
+        }
+
+        const organizationId = getOrganizationId(identity);
+        if (!organizationId) throw new Error("Not authorized");
+
+        const conversation = await ctx.db.get("conversations", conversationId);
+        if (!conversation) {
+            throw new Error("Conversation not found");
+        }
+
+        if (conversation.organizationId !== organizationId) {
+            throw new Error("Not authorized");
+        }
+
+        await requireFeature(ctx, organizationId, "aiCustomerSupport");
+
+        // Fresh thread = empty message history; old thread orphaned.
+        const threadId = await createThread(ctx, components.agent);
+        await ctx.db.patch(conversationId, {
+            threadId,
+            vapiChatId: undefined,
+        });
+        return { cleared: true };
     },
 });
 
@@ -135,6 +223,8 @@ const organizationId = getOrganizationId(identity);
         if (conversation.organizationId !== organizationId) {
             throw new Error("Not authorized");
         }
+
+        await requireFeature(ctx, organizationId, "aiCustomerSupport");
 
         await ctx.db.patch("conversations", conversationId, { status });
     },

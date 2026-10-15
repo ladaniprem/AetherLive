@@ -3,6 +3,7 @@ import { ActionCtx } from "../_generated/server";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import { getOrganizationId } from "../lib/auth";
+import { requireFeature } from "../lib/subscription";
 
 export const getSecret = internalQuery({
     args: {},
@@ -13,25 +14,18 @@ export const getSecret = internalQuery({
         }
 
         const organizationId = getOrganizationId(identity);
+        if (!organizationId) {
+            throw new Error("Not authorized");
+        }
 
-        const secret = organizationId
-            ? await ctx.db
-                  .query("secrets")
-                  .withIndex("by_service_and_organizationId", (q) =>
-                      q
-                          .eq("service", "vapi")
-                          .eq("organizationId", organizationId),
-                  )
-                  .first()
-            : await ctx.db
-                  .query("secrets")
-                  .filter((q) =>
-                      q.and(
-                          q.eq(q.field("service"), "vapi"),
-                          q.eq(q.field("organizationId"), undefined),
-                      ),
-                  )
-                  .first();
+        await requireFeature(ctx, organizationId, "aiVoiceAgent");
+
+        const secret = await ctx.db
+            .query("secrets")
+            .withIndex("by_service_and_organizationId", (q) =>
+                q.eq("service", "vapi").eq("organizationId", organizationId),
+            )
+            .first();
 
         if (!secret) {
             return null;

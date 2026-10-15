@@ -1,32 +1,14 @@
-// @ts-nocheck
 "use client";
 
-import { useEffect, useState } from "react";
-import { PricingTable as ClerkPricingTable } from "@clerk/nextjs";
+import { RazorpayCheckout } from "./razorpay-checkout";
 
+// Razorpay replaces Clerk Billing (Clerk charges per-seat + Stripe-only).
+// Plans live in Razorpay Dashboard; webhook at /api/razorpay-webhook
+// auto-upgrades the org to Pro in Convex.
 export const PricingTable = () => {
-  const [origin, setOrigin] = useState("");
-
-  useEffect(() => {
-    setOrigin(window.location.origin);
-  }, []);
-
-  if (!origin) return null;
-
   return (
     <div className="flex flex-col items-center justify-center gap-y-4">
-      <ClerkPricingTable
-        for="organization"
-        redirectURL={`${origin}/billing/success`}
-        appearance={{
-          elements: {
-            pricingTableCard: "shadow-none! border! rounded-lg!",
-            pricingTableCardHeader: "bg-background!",
-            pricingTableCardBody: "bg-background!",
-            pricingTableCardFooter: "bg-background!",
-          }
-        }}
-      />
+      <RazorpayCheckout />
     </div>
-  )
+  );
 };

@@ -23,31 +23,21 @@ import {
   FormMessage,
 } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@workspace/ui/components/select";
 import { Separator } from "@workspace/ui/components/separator";
 import { Switch } from "@workspace/ui/components/switch";
 import { ThemeToggle } from "@workspace/ui/components/theme-toggle";
-import { useTheme } from "next-themes";
-import { Textarea } from "@workspace/ui/components/textarea";
+import { COLOR_THEMES } from "@workspace/ui/lib/appearance";
+import { useColorTheme } from "@/hooks/use-color-theme";
+import { cn } from "@workspace/ui/lib/utils";
+import { CheckIcon } from "lucide-react";
 
 const profileFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  bio: z.string().max(160, "Bio must be at most 160 characters").optional(),
-  language: z.string(),
-  timezone: z.string(),
 });
 
 const notificationsFormSchema = z.object({
   emailNotifications: z.boolean(),
-  marketingEmails: z.boolean(),
   conversationUpdates: z.boolean(),
-  weeklyDigest: z.boolean(),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -55,15 +45,12 @@ type NotificationsFormValues = z.infer<typeof notificationsFormSchema>;
 
 export const SettingsForm = () => {
   const { user } = useUser();
-  const { setTheme, theme } = useTheme();
+  const { colorTheme, setColorTheme } = useColorTheme();
 
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema as any) as any,
     defaultValues: {
       name: user?.fullName || "",
-      bio: "",
-      language: "en",
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     },
   });
 
@@ -71,9 +58,7 @@ export const SettingsForm = () => {
     resolver: zodResolver(notificationsFormSchema as any) as any,
     defaultValues: {
       emailNotifications: true,
-      marketingEmails: false,
       conversationUpdates: true,
-      weeklyDigest: false,
     },
   });
 
@@ -100,7 +85,7 @@ export const SettingsForm = () => {
         <CardHeader>
           <CardTitle>Profile Information</CardTitle>
           <CardDescription>
-            Update your personal details and public profile
+            Update your personal details
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -123,69 +108,6 @@ export const SettingsForm = () => {
                 )}
               />
 
-              <FormField
-                control={profileForm.control}
-                name="bio"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Bio</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        {...field}
-                        placeholder="Tell us a little about yourself"
-                        rows={3}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Brief description for your profile (max 160 characters)
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <FormField
-                  control={profileForm.control}
-                  name="language"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Language</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select language" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="en">English</SelectItem>
-                          <SelectItem value="es">Spanish</SelectItem>
-                          <SelectItem value="fr">French</SelectItem>
-                          <SelectItem value="de">German</SelectItem>
-                          <SelectItem value="ja">Japanese</SelectItem>
-                          <SelectItem value="zh">Chinese</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={profileForm.control}
-                  name="timezone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Timezone</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Your timezone" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
               <div className="flex justify-end">
                 <Button disabled={profileForm.formState.isSubmitting} type="submit">
                   Save Profile
@@ -206,7 +128,7 @@ export const SettingsForm = () => {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <p className="text-sm font-medium">Theme</p>
+              <p className="text-sm font-medium">Mode</p>
               <p className="text-muted-foreground text-sm">
                 Select between light and dark mode
               </p>
@@ -216,20 +138,39 @@ export const SettingsForm = () => {
 
           <Separator />
 
-          <div className="flex items-center justify-between">
+          <div className="space-y-3">
             <div className="space-y-0.5">
-              <p className="text-sm font-medium">Current Theme</p>
+              <p className="text-sm font-medium">Color theme</p>
               <p className="text-muted-foreground text-sm">
-                {theme === "light" ? "Light mode is active" : "Dark mode is active"}
+                Professional palette used across the dashboard
               </p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-            >
-              Switch to {theme === "light" ? "Dark" : "Light"}
-            </Button>
+            <div className="flex items-center gap-3">
+              {COLOR_THEMES.map((preset) => {
+                const active = colorTheme === preset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    onClick={() => setColorTheme(preset.id)}
+                    title={preset.name}
+                    type="button"
+                    className={cn(
+                      "flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-all",
+                      active
+                        ? "border-foreground bg-accent font-medium"
+                        : "text-muted-foreground hover:bg-accent",
+                    )}
+                  >
+                    <span
+                      className="size-4 rounded-full"
+                      style={{ backgroundColor: preset.swatch }}
+                    />
+                    {preset.name}
+                    {active && <CheckIcon className="size-3.5" />}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -286,48 +227,6 @@ export const SettingsForm = () => {
                 )}
               />
 
-              <FormField
-                control={notificationsForm.control}
-                name="weeklyDigest"
-                render={({ field }) => (
-                  <FormItem className="flex items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <FormLabel>Weekly Digest</FormLabel>
-                      <FormDescription>
-                        Receive a weekly summary of your conversations
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={notificationsForm.control}
-                name="marketingEmails"
-                render={({ field }) => (
-                  <FormItem className="flex items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <FormLabel>Marketing Emails</FormLabel>
-                      <FormDescription>
-                        Receive emails about new features and updates
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
               <div className="flex justify-end">
                 <Button disabled={notificationsForm.formState.isSubmitting} type="submit">
                   Save Preferences
@@ -342,7 +241,7 @@ export const SettingsForm = () => {
         <CardHeader>
           <CardTitle>Account</CardTitle>
           <CardDescription>
-            Manage your account and connected services
+            Manage your account
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -355,18 +254,6 @@ export const SettingsForm = () => {
             </div>
             <Button variant="outline" size="sm" disabled>
               Managed by Clerk
-            </Button>
-          </div>
-
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div className="space-y-0.5">
-              <p className="text-sm font-medium">Connected Accounts</p>
-              <p className="text-muted-foreground text-sm">
-                Manage your connected social accounts
-              </p>
-            </div>
-            <Button variant="outline" size="sm" disabled>
-              Coming Soon
             </Button>
           </div>
         </CardContent>

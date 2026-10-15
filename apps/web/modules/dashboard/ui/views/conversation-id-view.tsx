@@ -8,7 +8,10 @@ import { api } from "@workspace/backend/_generated/api";
 import { Id } from "@workspace/backend/_generated/dataModel";
 import { Button } from "@workspace/ui/components/button";
 import { useAction, useMutation, useQuery } from "convex/react";
-import { MoreHorizontalIcon, Wand2Icon } from "lucide-react";
+import { ArrowLeftIcon, EraserIcon, MicIcon, MicOffIcon, MoreHorizontalIcon, Trash2Icon, Wand2Icon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useOrganization } from "@clerk/nextjs";
+import { useDashboardVapi } from "../../hooks/use-vapi";
 import {
   AIConversation,
   AIConversationContent,
@@ -32,8 +35,9 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DicebearAvatar } from "@workspace/ui/components/dicebear-avatar";
+import { getChatBackgroundStyle } from "@workspace/ui/lib/appearance";
 import { ConversationStatusButton } from "../components/conversation-status-button";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@workspace/ui/lib/utils";
 import { Skeleton } from "@workspace/ui/components/skeleton";
 import { toast } from "sonner";
@@ -42,14 +46,77 @@ const formSchema = z.object({
   message: z.string().min(1, "Message is required"),
 });
 
+// toUIMessages() returns UIMessage objects with `.text` + `.parts` —
+// there is NO `.content` field, so reading `.content` renders empty bubbles.
+const getMessageText = (message: any): string => {
+  if (typeof message.text === "string" && message.text) return message.text;
+  if (Array.isArray(message.parts)) {
+    return message.parts
+      .filter((p: any) => p.type === "text" && typeof p.text === "string")
+      .map((p: any) => p.text)
+      .join("");
+  }
+  return "";
+};
+
 export const ConversationIdView = ({
   conversationId,
 }: {
   conversationId: Id<"conversations">,
 }) => {
+  const router = useRouter();
+
+  // The plan can lapse while the tab is open, which makes every call on this
+  // page throw. One shared handler sends the operator to billing instead of
+  // silently dropping their reply.
+  const onPlanRequired = (error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error ?? "");
+    if (message.includes("PLAN_REQUIRED")) {
+      router.push("/billing");
+      return true;
+    }
+    return false;
+  };
+
   const conversation = useQuery(api.private.conversations.getOne, {
     conversationId,
   });
+
+  // Voice call — same Vapi assistant + transcript experience as the widget
+  const { organization } = useOrganization();
+  // Org's saved chat background (Widget Customization) — same as the widget
+  const widgetAppearance = useQuery(
+    api.public.widgetSettings.getByOrganizationId,
+    organization?.id ? { organizationId: organization.id } : "skip",
+  );
+  const voice = useDashboardVapi(organization?.id);
+  const [showVoice, setShowVoice] = useState(false);
+
+  // File a finished operator call into this chat as conversation messages.
+  const saveTranscript = useMutation(api.public.messages.saveTranscript);
+  const transcriptSavedRef = useRef(false);
+  useEffect(() => {
+    if (voice.isConnected || voice.isConnecting) {
+      transcriptSavedRef.current = false;
+    }
+  }, [voice.isConnected, voice.isConnecting]);
+  useEffect(() => {
+    if (voice.isConnected || voice.isConnecting) return;
+    if (transcriptSavedRef.current || voice.transcript.length === 0) return;
+    const contactSessionId = conversation?.contactSessionId;
+    if (!contactSessionId) return;
+    transcriptSavedRef.current = true;
+    saveTranscript({
+      conversationId,
+      contactSessionId,
+      lines: voice.transcript.map((line) => ({
+        role: line.role,
+        text: line.text,
+      })),
+    }).catch((error) => {
+      console.warn("[dashboard] saving call transcript failed:", error);
+    });
+  }, [voice.isConnected, voice.isConnecting, voice.transcript]);
 
   const messages = useThreadMessages(
     api.private.messages.getMany,
@@ -86,6 +153,7 @@ export const ConversationIdView = ({
 
       form.setValue("message", response);
     } catch (error) {
+      if (onPlanRequired(error)) return;
       toast.error("Something went wrong");
       console.error(error);
     } finally {
@@ -103,7 +171,45 @@ export const ConversationIdView = ({
 
       form.reset();
     } catch (error) {
+      if (onPlanRequired(error)) return;
+      toast.error("Failed to send message");
       console.error(error);
+    }
+  };
+
+  const [isClearing, setIsClearing] = useState(false);
+  const clearMessages = useMutation(api.private.conversations.clearMessages);
+  const handleClear = async () => {
+    if (!conversation) return;
+    if (!window.confirm("Clear all messages in this chat? The conversation stays open.")) return;
+    setIsClearing(true);
+    try {
+      await clearMessages({ conversationId });
+      toast.success("Messages cleared");
+    } catch (error) {
+      if (onPlanRequired(error)) return;
+      toast.error("Failed to clear messages");
+      console.error(error);
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
+  const [isDeleting, setIsDeleting] = useState(false);
+  const deleteConversation = useMutation(api.private.conversations.remove);
+  const handleDelete = async () => {
+    if (!conversation) return;
+    if (!window.confirm("Delete this conversation? This cannot be undone.")) return;
+    setIsDeleting(true);
+    try {
+      await deleteConversation({ conversationId });
+      toast.success("Conversation deleted");
+      router.push("/conversations");
+    } catch (error) {
+      if (onPlanRequired(error)) return;
+      toast.error("Failed to delete conversation");
+      console.error(error);
+      setIsDeleting(false);
     }
   };
 
@@ -144,18 +250,113 @@ export const ConversationIdView = ({
   }
 
   return (
-    <div className="flex h-full flex-col bg-muted">
-      <header className="flex items-center justify-end border-b bg-background p-2.5">
+    <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-muted">
+      <header className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-b bg-background p-2.5">
+        <Button
+          className="mr-auto md:hidden"
+          onClick={() => router.push("/conversations")}
+          size="icon"
+          variant="ghost"
+          title="Back to conversations"
+        >
+          <ArrowLeftIcon />
+        </Button>
+        {voice.canCall && (
+          <Button
+            onClick={() => setShowVoice((v) => !v)}
+            size="sm"
+            variant={showVoice ? "default" : "outline"}
+          >
+            {showVoice ? <MicOffIcon /> : <MicIcon />}
+            Voice call
+          </Button>
+        )}
         {!!conversation && (
-          <ConversationStatusButton
-            onClick={handleToggleStatus}
-            status={conversation.status}
-            disabled={isUpdatingStatus}
-            loading={isUpdatingStatus}
-          />
+          <>
+            <Button
+              disabled={isClearing}
+              onClick={handleClear}
+              size="icon"
+              variant="ghost"
+              title="Clear messages (keep chat)"
+            >
+              <EraserIcon />
+            </Button>
+            <Button
+              disabled={isDeleting}
+              onClick={handleDelete}
+              size="icon"
+              variant="ghost"
+              title="Delete entire conversation"
+            >
+              <Trash2Icon className="text-destructive" />
+            </Button>
+            <ConversationStatusButton
+              onClick={handleToggleStatus}
+              status={conversation.status}
+              disabled={isUpdatingStatus}
+              loading={isUpdatingStatus}
+            />
+          </>
         )}
       </header>
-      <AIConversation className="max-h-[calc(100vh-180px)]">
+      {showVoice && voice.canCall && (
+        <div className="flex shrink-0 flex-col gap-3 border-b bg-background p-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-x-2">
+              <div className={cn(
+                "size-3 rounded-full",
+                voice.isConnected
+                  ? voice.isSpeaking
+                    ? "animate-pulse bg-red-500"
+                    : "bg-green-500"
+                  : "bg-muted-foreground/30"
+              )} />
+              <span className="text-muted-foreground text-sm">
+                {voice.isConnected
+                  ? voice.isSpeaking
+                    ? "Assistant speaking..."
+                    : "Listening..."
+                  : voice.isConnecting
+                    ? "Connecting..."
+                    : "Voice call with customer"}
+              </span>
+            </div>
+            {voice.isConnected || voice.isConnecting ? (
+              <Button onClick={voice.endCall} size="sm" variant="destructive">
+                <MicOffIcon />
+                {voice.isConnected ? "End call" : "Cancel"}
+              </Button>
+            ) : (
+              <Button onClick={voice.startCall} size="sm">
+                <MicIcon />
+                Start call
+              </Button>
+            )}
+          </div>
+          {voice.transcript.length > 0 && (
+            <div className="flex max-h-48 min-h-0 flex-col gap-2 overflow-y-auto rounded-lg border bg-muted p-3">
+              {voice.transcript.map((line, index) => (
+                <div
+                  className={cn(
+                    "max-w-[85%] rounded-lg border px-2.5 py-1.5 text-sm",
+                    line.role === "assistant"
+                      ? "bg-background text-foreground"
+                      : "ml-auto border-transparent bg-primary text-primary-foreground",
+                  )}
+                  key={`${line.role}-${index}-${line.text}`}
+                >
+                  {line.text}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      <AIConversation
+        className="min-h-0 flex-1 overflow-y-auto"
+        style={getChatBackgroundStyle(widgetAppearance?.chatBackground)}
+      >
         <AIConversationContent>
           <InfiniteScrollTrigger
             canLoadMore={canLoadMore}
@@ -168,12 +369,13 @@ export const ConversationIdView = ({
             // In reverse, because we are watching from "assistant" prespective
               from={message.role === "user" ? "assistant" : "user"}
               key={message.id}
+              className="min-w-0"
             >
-              <AIMessageContent>
-                <AIResponse>
-                  {message.content}
-                </AIResponse>
-              </AIMessageContent>
+              <AIMessageContent className="min-w-0 overflow-hidden">
+                  <AIResponse>
+                    {getMessageText(message)}
+                  </AIResponse>
+                </AIMessageContent>
               {message.role === "user" && (
                 <DicebearAvatar
                   seed={conversation?.contactSessionId ?? "user"}
@@ -186,7 +388,7 @@ export const ConversationIdView = ({
         <AIConversationScrollButton />
       </AIConversation>
       
-      <div className="p-2">
+      <div className="shrink-0 border-t bg-background p-2">
         <Form {...form}>
           <AIInput onSubmit={form.handleSubmit(onSubmit)}>
             <FormField
@@ -250,13 +452,13 @@ export const ConversationIdView = ({
 
 export const ConversationIdViewLoading = () => {
   return (
-    <div className="flex h-full flex-col bg-muted">
-      <header className="flex items-center justify-between border-b bg-background p-2.5">
+    <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-muted">
+      <header className="flex shrink-0 items-center justify-between border-b bg-background p-2.5">
         <Button disabled size="sm" variant="ghost">
           <MoreHorizontalIcon />
         </Button>
       </header>
-      <AIConversation className="max-h-[calc(100vh-180px)]">
+      <AIConversation className="min-h-0 flex-1">
         <AIConversationContent>
           {Array.from({ length: 8 }, (_, index) => {
             const isUser = index % 2 === 0;

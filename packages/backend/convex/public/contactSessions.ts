@@ -2,6 +2,7 @@ import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { checkRateLimit } from "../lib/rateLimit";
 import { validateCsrfToken } from "../lib/csrf";
+import { canUseFeature } from "../lib/subscription";
 
 export const getOne = query({
     args: {
@@ -54,17 +55,21 @@ export const create = mutation({
         await checkRateLimit(ctx, "contactSessionCreate", organizationId);
         await validateCsrfToken(ctx, csrfToken, organizationId);
 
-        const sanitized = (s: string) =>
-            s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        // Don't collect PII for an org that can't serve the visitor. The
+        // widget checks `organizations.getAccess` first and shows the upgrade
+        // screen; this is the server-side backstop.
+        if (!(await canUseFeature(ctx, organizationId, "aiCustomerSupport"))) {
+            throw new Error("PLAN_REQUIRED: Chat is not available on the free plan");
+        }
 
         const contactSessionId = await ctx.db.insert("contactSessions", {
-            name: sanitized(name),
-            email: sanitized(email),
+            name,
+            email,
             organizationId,
             metadata: {
                 ...metadata,
-                referrer: sanitized(metadata.referrer),
-                currentUrl: sanitized(metadata.currentUrl),
+                referrer: metadata.referrer,
+                currentUrl: metadata.currentUrl,
             },
         });
         return contactSessionId;

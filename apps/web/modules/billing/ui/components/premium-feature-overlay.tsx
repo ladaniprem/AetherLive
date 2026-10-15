@@ -4,18 +4,16 @@ import {
   type LucideIcon,
   BookOpenIcon,
   BotIcon,
-  CheckCircle2Icon,
   GemIcon,
-  Loader2Icon,
+  MessageSquareTextIcon,
   MicIcon,
   PaletteIcon,
   PhoneIcon,
+  PlugIcon,
   UsersIcon,
-  XCircleIcon,
 } from "lucide-react";
-import { useMutation } from "convex/react";
-import { useOrganization } from "@clerk/nextjs";
-import { api } from "@workspace/backend/_generated/api";
+import Link from "next/link";
+import { LoaderIcon } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import {
   Card,
@@ -25,7 +23,6 @@ import {
   CardTitle,
 } from "@workspace/ui/components/card";
 import { useFeature } from "../../lib/use-subscription";
-import { useState } from "react";
 
 interface Feature {
   icon: LucideIcon;
@@ -41,7 +38,7 @@ interface PremiumFeatureOverlayProps {
 
 const features: Feature[] = [
   {
-    icon: BotIcon,
+    icon: MessageSquareTextIcon,
     label: "AI Customer Support",
     description: "Intelligent automated responses 24/7",
     featureKey: "aiCustomerSupport",
@@ -67,7 +64,7 @@ const features: Feature[] = [
   {
     icon: UsersIcon,
     label: "Team Access",
-    description: "Up to 5 operators per organization",
+    description: "Shared inbox for your whole team",
     featureKey: "teamAccess",
   },
   {
@@ -76,6 +73,12 @@ const features: Feature[] = [
     description: "Customize your chat widget appearance",
     featureKey: "widgetCustomization",
   },
+  {
+    icon: PlugIcon,
+    label: "Integrations",
+    description: "Connect Vapi and your existing stack",
+    featureKey: "integrations",
+  },
 ];
 
 export const PremiumFeatureOverlay = ({
@@ -83,34 +86,20 @@ export const PremiumFeatureOverlay = ({
   feature,
 }: PremiumFeatureOverlayProps) => {
   const hasFeature = useFeature(feature);
-  const { organization } = useOrganization();
-  const setPlan = useMutation(api.private.subscriptions.setPlan);
-  const [activating, setActivating] = useState(false);
-  const [result, setResult] = useState<"idle" | "success" | "error">("idle");
+
+  // Still resolving the plan. Rendering the paywall here would flash it on
+  // every page load for paying customers.
+  if (hasFeature === null) {
+    return (
+      <div className="flex min-h-svh items-center justify-center bg-muted">
+        <LoaderIcon className="size-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (hasFeature) {
     return <>{children}</>;
   }
-
-  const handleActivate = async () => {
-    const orgId = organization?.id;
-    if (!orgId) {
-      setResult("error");
-      console.error("No organization ID available from Clerk");
-      return;
-    }
-    setActivating(true);
-    setResult("idle");
-    try {
-      await setPlan({ plan: "pro", status: "active", organizationId: orgId });
-      setResult("success");
-    } catch (err) {
-      console.error("Activate Pro failed:", err);
-      setResult("error");
-    } finally {
-      setActivating(false);
-    }
-  };
 
   return (
     <div className="relative min-h-screen bg-muted">
@@ -128,13 +117,14 @@ export const PremiumFeatureOverlay = ({
                 <GemIcon className="size-6 text-muted-foreground" />
               </div>
             </div>
-            <CardTitle className="text-xl">Premium Feature</CardTitle>
+            <CardTitle className="text-xl">Upgrade to Pro</CardTitle>
             <CardDescription>
-              This feature requires a Pro subscription
+              Everything in AetherLive — AI replies, voice, knowledge base and
+              integrations — is a Pro feature. The free plan is a preview.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="space-y-6">
+            <div className="space-y-4">
               {features.map((f) => (
                 <div key={f.label} className="flex items-center gap-3">
                   <div className="flex size-8 items-center justify-center rounded-lg border bg-muted">
@@ -142,36 +132,24 @@ export const PremiumFeatureOverlay = ({
                   </div>
                   <div className="text-left">
                     <p className="font-medium text-sm">{f.label}</p>
-                    <p className="text-muted-foreground text-xs">{f.description}</p>
+                    <p className="text-muted-foreground text-xs">
+                      {f.description}
+                    </p>
                   </div>
                 </div>
               ))}
             </div>
 
-            {result === "success" && (
-              <div className="flex items-center justify-center gap-2 text-sm text-green-600">
-                <CheckCircle2Icon className="size-4" />
-                Pro activated! Refreshing...
-              </div>
-            )}
-            {result === "error" && (
-              <div className="flex items-center justify-center gap-2 text-sm text-red-500">
-                <XCircleIcon className="size-4" />
-                Failed to activate. Check console or try again.
-              </div>
-            )}
+            <Button className="w-full" size="lg" asChild>
+              <Link href="/billing">Upgrade to Pro</Link>
+            </Button>
 
-            <Button
-              className="w-full"
-              disabled={activating}
-              onClick={handleActivate}
-              size="lg"
-            >
-              {activating ? <Loader2Icon className="size-4 animate-spin" /> : "Activate Pro"}
+            <Button className="w-full" size="lg" variant="ghost" asChild>
+              <Link href="/docs">Read the docs</Link>
             </Button>
 
             <p className="text-center text-xs text-muted-foreground">
-              Already subscribed through Clerk? Click the button above to sync your plan.
+              Secure recurring payment via Razorpay — UPI Autopay, cards, netbanking (e-mandate) & international cards.
             </p>
           </CardContent>
         </Card>
@@ -179,3 +157,5 @@ export const PremiumFeatureOverlay = ({
     </div>
   );
 };
+
+export { features as PRO_FEATURES };

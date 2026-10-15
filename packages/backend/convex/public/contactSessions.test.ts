@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { withFreePlan, withSubscription } from "../../test-utils/subscription";
 
 vi.mock("../_generated/server", () => ({
   query: (def: any) => def,
@@ -52,7 +53,7 @@ const COMMON_ARGS = {
 
 describe("contactSessions.create", () => {
   it("creates a contact session successfully", async () => {
-    const ctx = { db: makeDb({ insert: vi.fn().mockResolvedValue("cs-id-1") }), auth: { getUserIdentity: vi.fn() }, storage: { store: vi.fn(), delete: vi.fn() } };
+    const ctx = withSubscription({ db: makeDb({ insert: vi.fn().mockResolvedValue("cs-id-1") }), auth: { getUserIdentity: vi.fn() }, storage: { store: vi.fn(), delete: vi.fn() } } as any);
     const { create } = await import("./contactSessions");
     const result = await (create as any).handler(ctx, COMMON_ARGS);
     expect(result).toBe("cs-id-1");
@@ -62,7 +63,7 @@ describe("contactSessions.create", () => {
     const rateLimit = await import("../lib/rateLimit");
     const { create } = await import("./contactSessions");
     await (create as any).handler(
-      { db: makeDb(), auth: { getUserIdentity: vi.fn() }, storage: { store: vi.fn(), delete: vi.fn() } } as any,
+      withSubscription({ db: makeDb(), auth: { getUserIdentity: vi.fn() }, storage: { store: vi.fn(), delete: vi.fn() } } as any),
       COMMON_ARGS,
     );
     expect(rateLimit.checkRateLimit).toHaveBeenCalledWith(expect.anything(), "contactSessionCreate", "org-123");
@@ -72,10 +73,18 @@ describe("contactSessions.create", () => {
     const csrf = await import("../lib/csrf");
     const { create } = await import("./contactSessions");
     await (create as any).handler(
-      { db: makeDb(), auth: { getUserIdentity: vi.fn() }, storage: { store: vi.fn(), delete: vi.fn() } } as any,
+      withSubscription({ db: makeDb(), auth: { getUserIdentity: vi.fn() }, storage: { store: vi.fn(), delete: vi.fn() } } as any),
       COMMON_ARGS,
     );
     expect(csrf.validateCsrfToken).toHaveBeenCalledWith(expect.anything(), "test-csrf-token", "org-123");
+  });
+
+  it("refuses to store PII for a free org", async () => {
+    const insert = vi.fn();
+    const ctx = withFreePlan({ db: makeDb({ insert }), auth: { getUserIdentity: vi.fn() }, storage: { store: vi.fn(), delete: vi.fn() } } as any);
+    const { create } = await import("./contactSessions");
+    await expect((create as any).handler(ctx, COMMON_ARGS)).rejects.toThrow(/PLAN_REQUIRED/);
+    expect(insert).not.toHaveBeenCalled();
   });
 });
 

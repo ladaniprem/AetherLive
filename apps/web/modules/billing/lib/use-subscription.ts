@@ -1,4 +1,3 @@
-// @ts-nocheck
 "use client";
 
 import { useQuery } from "convex/react";
@@ -7,7 +6,7 @@ import { api } from "@workspace/backend/_generated/api";
 
 export type Plan = "free" | "pro" | "enterprise";
 
-interface SubscriptionInfo {
+export interface SubscriptionInfo {
   plan: Plan;
   status: string;
   name: string;
@@ -19,12 +18,19 @@ interface SubscriptionInfo {
   currentPeriodEnd: number | null;
 }
 
+/**
+ * `undefined` means "not loaded yet" — callers MUST distinguish that from
+ * "loaded and not entitled", otherwise every guarded page flashes the paywall
+ * on first paint while the plan query is still in flight.
+ */
 export function useSubscription(): SubscriptionInfo | undefined {
   const { organization } = useOrganization();
 
+  // Clerk's active org resolves asynchronously. Querying before it does would
+  // return a default "free" and flash the paywall at paying customers.
   const data = useQuery(
     api.private.subscriptions.getOrgPlan,
-    { organizationId: organization?.id },
+    organization?.id ? { organizationId: organization.id } : "skip",
   );
 
   if (!data) return undefined;
@@ -42,8 +48,12 @@ export function useSubscription(): SubscriptionInfo | undefined {
   };
 }
 
-export function useFeature(feature: string): boolean {
+/**
+ * `null` = still loading, `true`/`false` = known. The paywall renders only
+ * on an explicit `false`.
+ */
+export function useFeature(feature: string): boolean | null {
   const subscription = useSubscription();
-  if (!subscription) return false;
+  if (!subscription) return null;
   return subscription.features.includes(feature);
 }

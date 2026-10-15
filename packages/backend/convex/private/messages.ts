@@ -5,6 +5,7 @@ import { listMessages, saveMessage } from "@convex-dev/agent";
 import { checkRateLimit, checkRateLimitAction } from "../lib/rateLimit";
 import { components } from "../_generated/api";
 import { getOrganizationId } from "../lib/auth";
+import { requireFeature } from "../lib/subscription";
 
 export const getMany = query({
     args: {
@@ -18,6 +19,13 @@ export const getMany = query({
         if (!identity) {
             throw new Error("Not authenticated");
         }
+
+        const organizationId = getOrganizationId(identity);
+        if (!organizationId) {
+            throw new Error("Not authorized");
+        }
+
+        await requireFeature(ctx, organizationId, "aiCustomerSupport");
 
         return await listMessages(ctx, components.agent, {
             threadId,
@@ -55,6 +63,8 @@ const organizationId = getOrganizationId(identity);
             throw new Error("Not authorized");
         }
 
+        await requireFeature(ctx, organizationId, "aiCustomerSupport");
+
         await saveMessage(ctx, components.agent, {
             threadId: conversation.threadId,
             prompt,
@@ -76,14 +86,32 @@ export const enhanceResponse = action({
 
         await checkRateLimitAction(ctx, "enhanceResponse", identity.subject);
 
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        const organizationId = getOrganizationId(identity);
+        if (!organizationId) {
+            throw new Error("Not authorized");
+        }
+
+        const { internal } = await import("../_generated/api");
+        await ctx.runQuery(internal.entitlements.assertFeature, {
+            organizationId,
+            feature: "aiCustomerSupport",
+        });
+
+        // Uses AI Credits (OpenAI-compatible) — OPENAI_API_KEY was never set
+        // on the deployment, which made Enhance always fail with Unauthorized.
+        const apiKey = process.env.AI_Credits_API_KEY;
+        if (!apiKey) {
+            throw new Error("AI credits key not configured");
+        }
+
+        const response = await fetch("https://api.aicredits.in/v1/chat/completions", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+                Authorization: `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-                model: "gpt-4o-mini",
+                model: "openai/gpt-4o-mini",
                 messages: [
                     {
                         role: "system",
