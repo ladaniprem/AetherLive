@@ -334,8 +334,7 @@ VAPI_API_KEY=...
 ---
 
 ## 📞 Support & Contact
-
-- **Landing → Contact** section or `apps/web/components/landing/footer.tsx
+- **Landing → Contact** section or `apps/web/components/landing/footer.tsx`
 - **Docs for AI contributors:** `AGENTS.md` + `packages/backend/AGENTS.md` (+ `convex/_generated/ai/guidelines.md` before touching Convex)
 
 ---
