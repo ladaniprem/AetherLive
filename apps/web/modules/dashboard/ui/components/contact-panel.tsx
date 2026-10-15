@@ -49,11 +49,50 @@ export const ContactPanel = () => {
       const browser = Bowser.getParser(userAgent);
       const result = browser.getResult();
 
+      let browserName = result.browser.name || "";
+      let browserVersion = result.browser.version || "";
+      let osName = result.os.name || "";
+      let osVersion = result.os.version || "";
+
+      // Fallback for reduced/frozen or non-standard UA strings Bowser can't parse
+      if (!browserName) {
+        const edge = userAgent.match(/Edg\/([\d.]+)/);
+        const chrome = userAgent.match(/Chrome\/([\d.]+)/);
+        const firefox = userAgent.match(/Firefox\/([\d.]+)/);
+        const safari = userAgent.match(/Version\/([\d.]+).*Safari/);
+        if (edge) {
+          browserName = "Microsoft Edge"; browserVersion = edge[1] ?? "";
+        } else if (chrome) {
+          browserName = "Chrome"; browserVersion = chrome[1] ?? "";
+        } else if (firefox) {
+          browserName = "Firefox"; browserVersion = firefox[1] ?? "";
+        } else if (safari) {
+          browserName = "Safari"; browserVersion = safari[1] ?? "";
+        }
+      }
+      if (!osName) {
+        const win = userAgent.match(/Windows NT ([\d.]+)/);
+        const mac = userAgent.match(/Mac OS X ([\d_]+)/);
+        const android = userAgent.match(/Android ([\d.]+)/);
+        const ios = userAgent.match(/OS ([\d_]+) like Mac OS X/);
+        if (win) {
+          osName = "Windows"; osVersion = win[1] ?? "";
+        } else if (/iPhone|iPad|iPod/.test(userAgent)) {
+          osName = "iOS"; osVersion = (ios?.[1] ?? "").replace(/_/g, ".");
+        } else if (mac) {
+          osName = "macOS"; osVersion = (mac[1] ?? "").replace(/_/g, ".");
+        } else if (android) {
+          osName = "Android"; osVersion = android[1] ?? "";
+        } else if (/Linux/.test(userAgent)) {
+          osName = "Linux";
+        }
+      }
+
       return {
-        browser: result.browser.name || "Unknown",
-        browserVersion: result.browser.version || "",
-        os: result.os.name || "Unknown",
-        osVersion: result.os.version || "",
+        browser: browserName || "Unknown",
+        browserVersion,
+        os: osName || "Unknown",
+        osVersion,
         device: result.platform.type || "desktop",
         deviceVendor: result.platform.vendor || "",
         deviceModel: result.platform.model || "",
@@ -168,14 +207,31 @@ export const ContactPanel = () => {
     ];
   }, [contactSession, userAgentInfo, countryInfo]);
 
-  if (contactSession === undefined || contactSession === null) {
-    return null;
+  if (contactSession === undefined) {
+    return (
+      <div className="flex h-full w-full flex-col gap-2 p-4">
+        <div className="h-10 w-10 rounded-full bg-muted" />
+        <div className="h-4 w-32 rounded bg-muted" />
+        <div className="h-3 w-40 rounded bg-muted" />
+      </div>
+    );
+  }
+
+  if (contactSession === null) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-6 text-center">
+        <p className="font-medium text-sm">No contact selected</p>
+        <p className="text-muted-foreground text-xs">
+          Open a conversation to see visitor details here.
+        </p>
+      </div>
+    );
   }
 
   return (
-    <div className="flex h-full w-full flex-col bg-background text-foreground">
-      <div className="flex flex-col gap-y-4 p-4">
-        <div className="flex items-center gap-x-2">
+    <div className="flex h-full w-full min-w-0 flex-col overflow-hidden bg-background text-foreground">
+      <div className="flex shrink-0 flex-col gap-y-4 p-4">
+        <div className="flex min-w-0 items-center gap-x-2">
           <DicebearAvatar
             badgeImageUrl={
               countryInfo?.code
@@ -185,13 +241,13 @@ export const ContactPanel = () => {
             seed={contactSession._id}
             size={42}
           />
-          <div className="flex-1 overflow-hidden">
-            <div className="flex items-center gap-x-2">
-              <h4 className="line-clamp-1">
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <div className="flex min-w-0 items-center gap-x-2">
+              <h4 className="min-w-0 flex-1 truncate">
                 {contactSession.name}
               </h4>
             </div>
-            <p className="line-clamp-1 text-muted-foreground text-sm">
+            <p className="truncate text-muted-foreground text-sm" title={contactSession.email}>
               {contactSession.email}
             </p>
           </div>
@@ -225,14 +281,14 @@ export const ContactPanel = () => {
                     <span>{section.title}</span>
                   </div>
                 </AccordionTrigger>
-                <AccordionContent className="px-5 py-4">
-                  <div className="space-y-2 text-sm">
+                <AccordionContent className="overflow-hidden px-5 py-4">
+                  <div className="min-w-0 space-y-2 text-sm">
                     {section.items.map((item) => (
-                      <div className="flex justify-between" key={`${section.id}-${item.label}`}>
-                        <span className="text-muted-foreground">
+                      <div className="flex min-w-0 justify-between gap-3" key={`${section.id}-${item.label}`}>
+                        <span className="shrink-0 text-muted-foreground">
                           {item.label}:
                         </span>
-                        <span className={item.className}>{item.value}</span>
+                        <span className={`min-w-0 text-right break-all ${item.className ?? ""}`}>{item.value}</span>
                       </div>
                     ))}
                   </div>

@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://aetherlive.ai"><img alt="Website" src="https://img.shields.io/badge/Website-aetherlive.ai-blue?style=flat-square" /></a>
+  <a href="https://aetherlive.live"><img alt="Website" src="https://img.shields.io/badge/Website-aetherlive.ai-blue?style=flat-square" /></a>
   <img alt="Pipeline" src="https://github.com/ladaniprem/AetherLive/actions/workflows/pipeline.yml/badge.svg" />
   <img alt="Next.js" src="https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js" />
   <img alt="Convex" src="https://img.shields.io/badge/Backend-Convex-orange?style=flat-square" />
@@ -171,7 +171,7 @@ Optional: Vapi voice call → keys fetched securely from AWS Secrets Manager
 |---|---|---|
 | Frontend | **Next.js 16** (App Router) | Fast, SEO-friendly landing + dashboard |
 | Backend | **Convex** (serverless DB + realtime + actions) | No backend ops, scales to millions of messages |
-| Auth & Billing | **Clerk** (JWT → Convex, Organizations, Billing/PricingTable) | Multi-tenant orgs, secure auth, Stripe via Clerk — no custom billing code |
+| Auth & Billing | **Clerk** (JWT → Convex, Organizations) + **Razorpay** (Subscriptions, INR/USD) | Multi-tenant orgs, secure auth, UPI/cards billing with signature-verified webhooks |
 | UI | **shadcn/ui + Tailwind + Radix** (`@workspace/ui`) | Consistent, accessible design system |
 | Monorepo | **Turborepo + pnpm workspaces** | One repo for web, widget, embed, backend, UI |
 | Observability | **Sentry** (tunnel + Session Replay, OTLP) | Catch errors before customers do |

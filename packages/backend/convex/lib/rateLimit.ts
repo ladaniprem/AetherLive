@@ -12,8 +12,12 @@ export const RATE_LIMITS = {
   publicMessageGetMany: { max: 30, windowMs: 60_000 },
   conversationGetOne: { max: 30, windowMs: 60_000 },
   organizationValidate: { max: 10, windowMs: 60_000 },
-  messageCreate: { max: 20, windowMs: 60_000 },
-  enhanceResponse: { max: 10, windowMs: 60_000 },
+    messageCreate: { max: 20, windowMs: 60_000 },
+    enhanceResponse: { max: 10, windowMs: 60_000 },
+    // AI calls cost money per request, so they get their own budget keyed by
+    // org rather than by visitor session.
+    agentRespond: { max: 60, windowMs: 60_000 },
+    vapiChatRespond: { max: 60, windowMs: 60_000 },
 } as const satisfies Record<string, RateLimitConfig>;
 
 export type RateLimitKey = keyof typeof RATE_LIMITS;

@@ -34,9 +34,14 @@ const schema = defineSchema({
         threadId: v.string(),
         contactSessionId: v.id("contactSessions"),
         organizationId: v.optional(v.string()),
+        // Vapi /chat chain id for multi-turn text chat via the voice assistant
+        vapiChatId: v.optional(v.string()),
     }).index("by_contactSessionId", ["contactSessionId"])
         .index("by_status", ["status"])
         .index("by_contactSessionId_and_threadId", ["contactSessionId", "threadId"])
+        // The public AI action is called with only a threadId, so the
+        // thread→conversation→org lookup needs its own index.
+        .index("by_threadId", ["threadId"])
         .index("by_organizationId_and_status", ["organizationId", "status"]),
     files: defineTable({
         name: v.string(),
@@ -58,6 +63,8 @@ const schema = defineSchema({
             assistantId: v.optional(v.string()),
             phoneNumber: v.optional(v.string()),
         }),
+        themeColor: v.optional(v.string()),
+        chatBackground: v.optional(v.string()),
     }).index("by_organizationId", ["organizationId"]),
     plugins: defineTable({
         service: v.string(),
@@ -94,7 +101,10 @@ const schema = defineSchema({
             v.literal("past_due"),
             v.literal("trialing"),
         ),
-        stripeSubscriptionId: v.optional(v.string()),
+        razorpaySubscriptionId: v.optional(v.string()),
+        razorpayCustomerId: v.optional(v.string()),
+        razorpayPlanId: v.optional(v.string()),
+        currency: v.optional(v.string()),
         currentPeriodEnd: v.optional(v.number()),
         updatedAt: v.number(),
     }).index("by_organizationId", ["organizationId"]),

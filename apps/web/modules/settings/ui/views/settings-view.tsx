@@ -1,6 +1,6 @@
 import { SettingsForm } from "../components/settings-form";
 
-export const SettingsView = () => {
+export const SettingsView =() => {
   return (
     <div className="flex min-h-screen flex-col bg-muted p-8">
       <div className="mx-auto w-full max-w-screen-md">

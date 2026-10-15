@@ -52,10 +52,16 @@ export const useVapi = () => {
     });
 
     vapiInstance.on("message", (message) => {
-      if (message.type === "transcript" && message.transcriptType === "final") {
-        setTranscript((prev) => [...prev, { 
-            role: message.role, 
-            text: message.text 
+      if (
+        message.type === "transcript" &&
+        message.transcriptType === "final" &&
+        typeof message.text === "string" &&
+        message.text.trim().length > 0 &&
+        (message.role === "user" || message.role === "assistant")
+      ) {
+        setTranscript((prev) => [...prev, {
+            role: message.role,
+            text: message.text
         }
         ]);
       }
@@ -81,6 +87,11 @@ export const useVapi = () => {
     if (vapi) {
       vapi.stop();
     }
+    // Reset immediately so a stuck "Connecting..." never traps the UI,
+    // even if the SDK fails to fire call-end (e.g. Krisp worklet error).
+    setIsConnecting(false);
+    setIsConnected(false);
+    setIsSpeaking(false);
   };
 
   return {

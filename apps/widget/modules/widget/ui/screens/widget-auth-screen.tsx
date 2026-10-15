@@ -15,7 +15,7 @@ import { useAction, useMutation } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
 import { Doc } from "@workspace/backend/_generated/dataModel";
 import { useAtomValue, useSetAtom } from "jotai";
-import { contactSessionIdAtomFamily, organizationIdAtom, screenAtom, widgetSettingsAtom } from "../../atoms/widget-atoms";
+import { contactSessionIdAtomFamily, errorMessageAtom, organizationIdAtom, screenAtom, widgetSettingsAtom } from "../../atoms/widget-atoms";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -24,6 +24,7 @@ const formSchema = z.object({
 
 export const WidgetAuthScreen = () => {
   const setScreen = useSetAtom(screenAtom);
+  const setErrorMessage = useSetAtom(errorMessageAtom);
 
   const widgetSettings = useAtomValue(widgetSettingsAtom);
   const organizationId = useAtomValue(organizationIdAtom);
@@ -62,17 +63,37 @@ export const WidgetAuthScreen = () => {
       currentUrl: window.location.href,
     };
 
-    const { token } = await generateCsrfToken({ organizationId });
+    try {
+      const { token } = await generateCsrfToken({ organizationId });
 
-    const contactSessionId = await createContactSession({
-      ...values,
-      organizationId,
-      csrfToken: token,
-      metadata,
-    });
+      const contactSessionId = await createContactSession({
+        ...values,
+        organizationId,
+        csrfToken: token,
+        metadata,
+      });
 
-    setContactSessionId(contactSessionId);
-    setScreen("selection");
+      setContactSessionId(contactSessionId);
+      setScreen("selection");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error ?? "");
+
+      // The org's plan is checked server-side before any PII is stored, so a
+      // free org never gets a half-created session.
+      if (message.includes("PLAN_REQUIRED")) {
+        setErrorMessage("Chat is not available on the free plan");
+        setScreen("paywall");
+        return;
+      }
+
+      // The widget has no Toaster mounted, so surface failures on the error
+      // screen instead of a toast nobody would ever see.
+      console.error("[widget] contact session failed:", error);
+      setErrorMessage(
+        message.replace(/^Server Error:\s*/, "") || "Something went wrong"
+      );
+      setScreen("error");
+    }
   };
 
   return (

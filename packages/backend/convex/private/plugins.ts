@@ -1,6 +1,7 @@
 import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getOrganizationId } from "../lib/auth";
+import { requireFeature } from "../lib/subscription";
 
 export const getOne = query({
     args: {
@@ -12,17 +13,19 @@ export const getOne = query({
             throw new Error("Not authenticated");
         }
 
-        const plugin = await ctx.db
+        const organizationId = getOrganizationId(identity);
+        if (!organizationId) {
+            throw new Error("Not authorized");
+        }
+
+        await requireFeature(ctx, organizationId, "integrations");
+
+        return await ctx.db
             .query("plugins")
-            .filter((q) =>
-                q.and(
-                    q.eq(q.field("service"), args.service),
-                    q.eq(q.field("organizationId"), getOrganizationId(identity)),
-                ),
+            .withIndex("by_service_and_organizationId", (q) =>
+                q.eq("service", args.service).eq("organizationId", organizationId),
             )
             .first();
-
-        return plugin;
     },
 });
 
@@ -36,13 +39,17 @@ export const remove = mutation({
             throw new Error("Not authenticated");
         }
 
+        const organizationId = getOrganizationId(identity);
+        if (!organizationId) {
+            throw new Error("Not authorized");
+        }
+
+        await requireFeature(ctx, organizationId, "integrations");
+
         const plugin = await ctx.db
             .query("plugins")
-            .filter((q) =>
-                q.and(
-                    q.eq(q.field("service"), args.service),
-                    q.eq(q.field("organizationId"), getOrganizationId(identity)),
-                ),
+            .withIndex("by_service_and_organizationId", (q) =>
+                q.eq("service", args.service).eq("organizationId", organizationId),
             )
             .first();
 

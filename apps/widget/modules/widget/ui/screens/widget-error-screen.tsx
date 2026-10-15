@@ -2,18 +2,19 @@
 
 import { useAtomValue } from "jotai";
 import { AlertTriangleIcon } from "lucide-react";
-import { errorMessageAtom } from "@/modules/widget/atoms/widget-atoms";
+import { errorMessageAtom, widgetSettingsAtom } from "@/modules/widget/atoms/widget-atoms";
 import { WidgetHeader } from "@/modules/widget/ui/components/widget-header";
 
 export const WidgetErrorScreen = () => {
   const errorMessage = useAtomValue(errorMessageAtom);
+  const widgetSettings = useAtomValue(widgetSettingsAtom);
 
   return (
     <>
       <WidgetHeader>
         <div className="flex flex-col justify-between gap-y-2 px-2 py-6 font-semibold">
           <p className="text-3xl">
-            Hi there! 👋
+            {widgetSettings?.greetMessage || "Hi there!"}
           </p>
           <p className="text-lg">
             Let&apos;s get you started

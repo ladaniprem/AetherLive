@@ -415,8 +415,8 @@
 
     <h2>Basic Usage</h2>
     <div class="code-wrap">
-      <pre onclick="copyCode(this)"><code>&lt;script src="https://cdn.aetherlive.ai/widget.js" 
-        data-organization-id="<span id="example-org-id">org_31QtvqJKwhtvop04esLJMkmFouB</span>"&gt;
+      <pre onclick="copyCode(this)"><code>&lt;script src="https://widget.aetherlive.live/embed/widget.js" 
+        data-organization-id="<span id="example-org-id">YOUR_ORGANIZATION_ID</span>"&gt;
 &lt;/script&gt;</code></pre>
       <button class="copy-btn" onclick="copyCode(event)">Copy</button>
     </div>
@@ -478,10 +478,24 @@
 
   <script>
     const WIDGET_URL = 'http://localhost:3001';
-    const DEFAULT_ORG_ID = 'org_31QtvqJKwhtvop04esLJMkmFouB';
+    // Paste your own Organization ID (Dashboard → Integrations). Never
+    // hardcode a real org ID here — chats would be attributed to it.
+    const DEFAULT_ORG_ID = 'YOUR_ORGANIZATION_ID';
+    // Seeded by the widget itself on every successful load, so reloading the
+    // demo page doesn't make you re-paste the org ID.
+    const LAST_ORG_KEY = 'AetherLive_last_organization_id';
 
     document.getElementById('example-org-id').textContent = DEFAULT_ORG_ID;
-    document.getElementById('orgId').value = DEFAULT_ORG_ID;
+    // Prefill from the last org that worked; the field stays editable.
+    try {
+      const last = window.localStorage.getItem(LAST_ORG_KEY);
+      if (last && last.trim()) {
+        document.getElementById('orgId').value = last.trim();
+        document.getElementById('example-org-id').textContent = last.trim();
+      }
+    } catch (e) {
+      // storage unavailable — user pastes manually
+    }
 
     const badge = document.getElementById('badge');
     const badgeDot = document.getElementById('badgeDot');

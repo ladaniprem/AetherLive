@@ -9,7 +9,7 @@ import { CheckIcon, CopyIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useCopyToClipboard } from "@workspace/ui/hooks/use-copy-to-clipboard";
 import { cn } from "@workspace/ui/lib/utils";
-import { IntegrationId, INTEGRATIONS } from "../../constants";
+import { IntegrationId, INTEGRATIONS, INTEGRATION_INSTRUCTIONS } from "../../constants";
 import Image from "next/image";
 import {
   Dialog,
@@ -24,6 +24,7 @@ import { createScript } from "../../utils";
 export const IntegrationsView = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedSnippet, setSelectedSnippet] = useState("");
+  const [selectedIntegration, setSelectedIntegration] = useState<IntegrationId>("html");
   const { organization } = useOrganization();
   const { copied, copy } = useCopyToClipboard();
 
@@ -35,6 +36,7 @@ export const IntegrationsView = () => {
 
     const snippet = createScript(integrationId, organization.id);
     setSelectedSnippet(snippet);
+    setSelectedIntegration(integrationId);
     setDialogOpen(true);
   };
 
@@ -51,6 +53,7 @@ export const IntegrationsView = () => {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         snippet={selectedSnippet}
+        integration={selectedIntegration}
       />
       <div className="flex min-h-screen flex-col bg-muted p-4 sm:p-6 md:p-8">
         <div className="mx-auto w-full max-w-screen-md">
@@ -94,7 +97,7 @@ export const IntegrationsView = () => {
           <Separator className="my-6 md:my-8" />
           <div className="space-y-6">
             <div className="space-y-1">
-              <Label className="text-base md:text-lg">Integrations</Label>
+              <p className="text-base font-medium md:text-lg">Integrations</p>
               <p className="text-muted-foreground text-xs md:text-sm">
                 Add the following code to your website to enable the chatbox.
               </p>
@@ -129,10 +132,12 @@ export const IntegrationsDialog = ({
   open,
   onOpenChange,
   snippet,
+  integration,
 }: {
   open: boolean;
   onOpenChange: (value: boolean) => void;
   snippet: string;
+  integration: IntegrationId;
 }) => {
   const { copied, copy } = useCopyToClipboard();
 
@@ -187,7 +192,11 @@ export const IntegrationsDialog = ({
               2. Add the code in your page
             </div>
             <p className="text-muted-foreground text-xs md:text-sm">
-              Paste the chatbox code above in your page. You can add it in the HTML head section.
+              {INTEGRATION_INSTRUCTIONS[integration]}
+            </p>
+            <p className="text-muted-foreground text-xs md:text-sm">
+              Optional: add <code>data-position=&quot;bottom-left&quot;</code> to the
+              script to move the launcher to the left corner.
             </p>
           </div>
         </div>

@@ -90,7 +90,14 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build
+      - name: Build
+        run: pnpm build
+        env:
+          # Public values inlined at build time. Real values come from repo
+          # secrets when set; placeholders keep CI green when they are not.
+          NEXT_PUBLIC_CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL || 'https://placeholder.convex.cloud' }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || 'pk_test_placeholder' }}
+          NEXT_PUBLIC_WIDGET_URL: ${{ vars.NEXT_PUBLIC_WIDGET_URL || 'https://widget.aetherlive.live' }}
 
   # --- CD: only on push to master/main or manual dispatch ---
   deploy-convex:

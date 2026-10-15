@@ -3,7 +3,7 @@ import { WidgetHeader } from "@/modules/widget/ui/components/widget-header";
 import { Button } from "@workspace/ui/components/button";
 import { useAtomValue, useSetAtom } from "jotai";
 import { ChevronRightIcon, MessageSquareTextIcon, MicIcon, PhoneIcon } from "lucide-react";
-import { contactSessionIdAtomFamily, conversationIdAtom, errorMessageAtom, hasVapiSecretsAtom, organizationIdAtom, screenAtom, widgetSettingsAtom } from "../../atoms/widget-atoms";
+import { canChatAtom, contactSessionIdAtomFamily, conversationIdAtom, errorMessageAtom, hasVapiSecretsAtom, organizationIdAtom, screenAtom, widgetSettingsAtom } from "../../atoms/widget-atoms";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
 import { useEffect, useState } from "react";
@@ -17,6 +17,7 @@ export const WidgetSelectionScreen = () => {
   const widgetSettings = useAtomValue(widgetSettingsAtom);
   const hasVapiSecrets = useAtomValue(hasVapiSecretsAtom);
   const organizationId = useAtomValue(organizationIdAtom);
+  const canChat = useAtomValue(canChatAtom);
   const contactSessionId = useAtomValue(
     contactSessionIdAtomFamily(organizationId || "")
   );
@@ -43,12 +44,17 @@ export const WidgetSelectionScreen = () => {
       setErrorMessage("Missing Organization ID");
       return;
     }
-    
+
+    if (canChat === false) {
+      setScreen("paywall");
+      return;
+    }
+
     if (!contactSessionId) {
       setScreen("auth");
       return;
     }
-    
+
     setIsPending(true);
     try {
       if (fetchContactSession === null) {
@@ -80,9 +86,16 @@ export const WidgetSelectionScreen = () => {
       setScreen("chat");
     } catch (error) {
       console.error("[widget] handleNewConversation failed:", error);
-      setErrorMessage(
-        error instanceof Error ? error.message : "Failed to start conversation"
-      );
+      const message = error instanceof Error ? error.message : "";
+
+      // Plan can change between boot and click; the server is authoritative.
+      if (message.includes("PLAN_REQUIRED")) {
+        setErrorMessage("Chat is not available on the free plan");
+        setScreen("paywall");
+        return;
+      }
+
+      setErrorMessage(message || "Failed to start conversation");
       setScreen("error");
     } finally {
       setIsPending(false);

@@ -1,6 +1,7 @@
 import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getOrganizationId } from "../lib/auth";
+import { requireFeature } from "../lib/subscription";
 
 export const getOne = query({
     args: {},
@@ -11,18 +12,16 @@ export const getOne = query({
         }
 
         const organizationId = getOrganizationId(identity);
+        if (!organizationId) {
+            throw new Error("Not authorized");
+        }
 
-        const settings = organizationId
-            ? await ctx.db
-                  .query("widgetSettings")
-                  .filter((q) => q.eq(q.field("organizationId"), organizationId))
-                  .first()
-            : await ctx.db
-                  .query("widgetSettings")
-                  .filter((q) => q.eq(q.field("organizationId"), undefined))
-                  .first();
+        await requireFeature(ctx, organizationId, "widgetCustomization");
 
-        return settings;
+        return await ctx.db
+            .query("widgetSettings")
+            .withIndex("by_organizationId", (q) => q.eq("organizationId", organizationId))
+            .first();
     },
 });
 
@@ -38,6 +37,8 @@ export const upsert = mutation({
             assistantId: v.optional(v.string()),
             phoneNumber: v.optional(v.string()),
         }),
+        themeColor: v.optional(v.string()),
+        chatBackground: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         const identity = await ctx.auth.getUserIdentity();
@@ -46,29 +47,33 @@ export const upsert = mutation({
         }
 
         const organizationId = getOrganizationId(identity);
+        if (!organizationId) {
+            throw new Error("Not authorized");
+        }
 
-        const existing = organizationId
-            ? await ctx.db
-                  .query("widgetSettings")
-                  .filter((q) => q.eq(q.field("organizationId"), organizationId))
-                  .first()
-            : await ctx.db
-                  .query("widgetSettings")
-                  .filter((q) => q.eq(q.field("organizationId"), undefined))
-                  .first();
+        await requireFeature(ctx, organizationId, "widgetCustomization");
+
+        const existing = await ctx.db
+            .query("widgetSettings")
+            .withIndex("by_organizationId", (q) => q.eq("organizationId", organizationId))
+            .first();
 
         if (existing) {
             await ctx.db.patch("widgetSettings", existing._id, {
                 greetMessage: args.greetMessage,
                 defaultSuggestions: args.defaultSuggestions,
                 vapiSettings: args.vapiSettings,
+                themeColor: args.themeColor,
+                chatBackground: args.chatBackground,
             });
         } else {
             await ctx.db.insert("widgetSettings", {
+                organizationId,
                 greetMessage: args.greetMessage,
                 defaultSuggestions: args.defaultSuggestions,
                 vapiSettings: args.vapiSettings,
-                ...(organizationId ? { organizationId } : {}),
+                themeColor: args.themeColor,
+                chatBackground: args.chatBackground,
             } as any);
         }
     },

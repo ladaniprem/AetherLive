@@ -11,9 +11,16 @@ import {
 } from "@workspace/ui/components/ai/message";
 import { useVapi } from "@/modules/widget/hooks/use-vapi";
 import { WidgetHeader } from "@/modules/widget/ui/components/widget-header";
-import { useSetAtom } from "jotai";
-import { screenAtom } from "../../atoms/widget-atoms";
+import { useAtomValue, useSetAtom } from "jotai";
+import {
+  contactSessionIdAtomFamily,
+  organizationIdAtom,
+  screenAtom,
+} from "../../atoms/widget-atoms";
 import { cn } from "@workspace/ui/lib/utils";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@workspace/backend/_generated/api";
+import { useEffect, useRef } from "react";
 
 export const WidgetVoiceScreen = () => {
   const setScreen = useSetAtom(screenAtom);
@@ -26,9 +33,60 @@ export const WidgetVoiceScreen = () => {
     isConnecting,
   } = useVapi();
 
+  // File the finished call into the visitor's chat as conversation messages.
+  const organizationId = useAtomValue(organizationIdAtom);
+  const contactSessionId = useAtomValue(
+    contactSessionIdAtomFamily(organizationId || "")
+  );
+  const session = useQuery(
+    api.public.contactSessions.getOne,
+    contactSessionId ? { contactSessionId } : "skip",
+  );
+  const createConversation = useMutation(api.public.conversations.create);
+  const saveTranscript = useMutation(api.public.messages.saveTranscript);
+  const transcriptSavedRef = useRef(false);
+
+  useEffect(() => {
+    if (isConnected || isConnecting) {
+      transcriptSavedRef.current = false;
+      return;
+    }
+  }, [isConnected, isConnecting]);
+
+  useEffect(() => {
+    if (isConnected || isConnecting) return;
+    if (transcriptSavedRef.current || transcript.length === 0) return;
+    if (!contactSessionId || !organizationId) return;
+    // Wait for the session lookup — saving before it resolves would
+    // create a duplicate conversation instead of reusing the open one.
+    if (session === undefined) return;
+    transcriptSavedRef.current = true;
+    (async () => {
+      try {
+        let conversationId = session?.conversationId;
+        if (!conversationId) {
+          conversationId = await createConversation({
+            contactSessionId,
+            organizationId,
+          });
+        }
+        await saveTranscript({
+          conversationId,
+          contactSessionId,
+          lines: transcript.map((line) => ({
+            role: line.role,
+            text: line.text,
+          })),
+        });
+      } catch (error) {
+        console.warn("[widget] saving call transcript failed:", error);
+      }
+    })();
+  }, [isConnected, isConnecting, transcript, session]);
+
   return (
     <>
-      <WidgetHeader>
+      <WidgetHeader className="flex items-center justify-between">
         <div className="flex items-center gap-x-2">
           <Button
             variant="transparent"
@@ -39,6 +97,12 @@ export const WidgetVoiceScreen = () => {
           </Button>
           <p>Voice Chat</p>
         </div>
+        {(isConnected || isConnecting) && (
+          <Button size="sm" variant="destructive" onClick={() => endCall()}>
+            <MicOffIcon />
+            {isConnected ? "End call" : "Cancel"}
+          </Button>
+        )}
       </WidgetHeader>
       {transcript.length > 0 ? (
         <AIConversation className="h-full">
@@ -76,7 +140,7 @@ export const WidgetVoiceScreen = () => {
             </div>
           )}
           <div className="flex w-full justify-center">
-            {isConnected ? (
+            {isConnected || isConnecting ? (
               <Button
                 className="w-full"
                 size="lg"
@@ -84,12 +148,11 @@ export const WidgetVoiceScreen = () => {
                 onClick={() => endCall()}
               >
                 <MicOffIcon />
-                End call
+                {isConnected ? "End call" : "Cancel"}
               </Button>
             ) : (
               <Button
                 className="w-full"
-                disabled={isConnecting}
                 size="lg"
                 onClick={() => startCall()}
               >

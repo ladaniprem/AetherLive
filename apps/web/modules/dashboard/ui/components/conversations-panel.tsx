@@ -101,7 +101,15 @@ export const ConversationsPanel = () => {
       {isLoadingFirstPage ? (
         <SkeletonConversations />
       ) : (
-        <ScrollArea className="max-h-[calc(100vh-53px)]">
+        <ScrollArea className="min-h-0 flex-1">
+          {conversations.results.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 px-6 py-16 text-center">
+              <p className="font-medium text-sm">No conversations yet</p>
+              <p className="text-muted-foreground text-xs">
+                New chats from your widget will appear here.
+              </p>
+            </div>
+          ) : (
           <div className="flex w-full flex-1 flex-col text-sm">
             {conversations.results.map((conversation) => {
               const isLastMessageFromOperator =
@@ -143,7 +151,7 @@ export const ConversationsPanel = () => {
                         {conversation.contactSession.name}
                       </span>
                       <span className="ml-auto shrink-0 text-muted-foreground text-xs">
-                        {formatDistanceToNow(conversation._creationTime)}
+                        {formatDistanceToNow(new Date(conversation._creationTime))}
                       </span>
                     </div>
                     <div className="mt-1 flex items-center justify-between gap-2">
@@ -173,6 +181,7 @@ export const ConversationsPanel = () => {
               ref={topElementRef}
             />
           </div>
+          )}
         </ScrollArea>
       )}
     </div>

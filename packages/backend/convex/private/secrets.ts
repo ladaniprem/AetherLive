@@ -1,6 +1,7 @@
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getOrganizationId } from "../lib/auth";
+import { requireFeature } from "../lib/subscription";
 
 export const upsert = mutation({
     args: {
@@ -14,26 +15,19 @@ export const upsert = mutation({
         }
 
         const organizationId = getOrganizationId(identity);
+        if (!organizationId) {
+            throw new Error("Missing organization");
+        }
 
-        const existing = organizationId
-            ? await ctx.db
-                  .query("secrets")
-                  .filter((q) =>
-                      q.and(
-                          q.eq(q.field("service"), args.service),
-                          q.eq(q.field("organizationId"), organizationId),
-                      ),
-                  )
-                  .first()
-            : await ctx.db
-                  .query("secrets")
-                  .filter((q) =>
-                      q.and(
-                          q.eq(q.field("service"), args.service),
-                          q.eq(q.field("organizationId"), undefined),
-                      ),
-                  )
-                  .first();
+        // Storing provider credentials is the Integrations capability.
+        await requireFeature(ctx, organizationId, "integrations");
+
+        const existing = await ctx.db
+            .query("secrets")
+            .withIndex("by_service_and_organizationId", (q) =>
+                q.eq("service", args.service).eq("organizationId", organizationId),
+            )
+            .first();
 
         if (existing) {
             await ctx.db.patch("secrets", existing._id, {
@@ -42,8 +36,8 @@ export const upsert = mutation({
         } else {
             await ctx.db.insert("secrets", {
                 service: args.service,
+                organizationId,
                 value: args.value,
-                ...(organizationId ? { organizationId } : {}),
             } as any);
         }
     },

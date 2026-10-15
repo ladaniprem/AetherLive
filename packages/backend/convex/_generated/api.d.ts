@@ -11,6 +11,7 @@
 import type * as _csrf from "../_csrf.js";
 import type * as _rateLimit from "../_rateLimit.js";
 import type * as _saveFile from "../_saveFile.js";
+import type * as entitlements from "../entitlements.js";
 import type * as http from "../http.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_csrf from "../lib/csrf.js";
@@ -22,6 +23,7 @@ import type * as private_conversations from "../private/conversations.js";
 import type * as private_files from "../private/files.js";
 import type * as private_messages from "../private/messages.js";
 import type * as private_plugins from "../private/plugins.js";
+import type * as private_razorpay from "../private/razorpay.js";
 import type * as private_secrets from "../private/secrets.js";
 import type * as private_subscriptions from "../private/subscriptions.js";
 import type * as private_vapi from "../private/vapi.js";
@@ -34,6 +36,7 @@ import type * as public_messages from "../public/messages.js";
 import type * as public_organizations from "../public/organizations.js";
 import type * as public_plugins from "../public/plugins.js";
 import type * as public_secrets from "../public/secrets.js";
+import type * as public_vapiChat from "../public/vapiChat.js";
 import type * as public_widgetSettings from "../public/widgetSettings.js";
 import type * as users from "../users.js";
 
@@ -47,6 +50,7 @@ declare const fullApi: ApiFromModules<{
   _csrf: typeof _csrf;
   _rateLimit: typeof _rateLimit;
   _saveFile: typeof _saveFile;
+  entitlements: typeof entitlements;
   http: typeof http;
   "lib/auth": typeof lib_auth;
   "lib/csrf": typeof lib_csrf;
@@ -58,6 +62,7 @@ declare const fullApi: ApiFromModules<{
   "private/files": typeof private_files;
   "private/messages": typeof private_messages;
   "private/plugins": typeof private_plugins;
+  "private/razorpay": typeof private_razorpay;
   "private/secrets": typeof private_secrets;
   "private/subscriptions": typeof private_subscriptions;
   "private/vapi": typeof private_vapi;
@@ -70,6 +75,7 @@ declare const fullApi: ApiFromModules<{
   "public/organizations": typeof public_organizations;
   "public/plugins": typeof public_plugins;
   "public/secrets": typeof public_secrets;
+  "public/vapiChat": typeof public_vapiChat;
   "public/widgetSettings": typeof public_widgetSettings;
   users: typeof users;
 }>;

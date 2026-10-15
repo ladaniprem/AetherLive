@@ -1,58 +1,66 @@
 "use client"
 
+import { useState } from "react"
 import { Check } from "lucide-react"
 import Link from "next/link"
+
+type Currency = "INR" | "USD"
 
 const plans = [
   {
     id: "starter",
     name: "Starter",
-    price: "Free",
-    description: "Perfect for exploring AI agent capabilities",
+    price: { INR: "Free", USD: "Free" } as Record<Currency, string>,
+    description: "Try the dashboard and embed the widget on your site",
     popular: false,
     features: [
       "1 AI agent",
       "100 conversations/month",
-      "Basic analytics",
-      "API Access",
+      "Embeddable chat widget",
+      "Conversation inbox",
     ],
     cta: "Get Started",
   },
   {
     id: "pro",
     name: "Pro",
-    price: "$20",
-    description: "For teams automating complex workflows",
+    price: { INR: "₹499", USD: "$20" } as Record<Currency, string>,
+    description:
+      "For teams supporting real customers — UPI Autopay & cards in India, international cards worldwide",
     popular: true,
     features: [
       "Up to 15 AI agents",
       "10,000 conversations/month",
-      "Advanced analytics",
-      "API Access",
-      "Team Collaboration",
-      "Custom integrations",
+      "AI auto-replies, 24/7",
+      "Voice agent + phone system",
+      "Knowledge base (train on your docs)",
+      "Widget themes & customization",
+      "Website integrations (HTML, React, Next.js)",
+      "Team access",
     ],
     cta: "Get Started",
   },
   {
     id: "enterprise",
     name: "Enterprise",
-    price: "Custom",
-    description: "For organizations that need full autonomy",
+    price: { INR: "Custom", USD: "Custom" } as Record<Currency, string>,
+    description: "For organizations that need full control",
     popular: false,
     features: [
       "Unlimited AI agents",
       "Unlimited conversations",
-      "Dedicated Account Manager",
-      "SSO & SAML",
-      "Audit Logs",
-      "Custom SLA",
+      "Everything in Pro",
+      "SSO",
+      "Audit logs",
+      "Dedicated account manager",
     ],
     cta: "Contact Sales",
   },
 ]
 
 export function Pricing() {
+  const [currency, setCurrency] = useState<Currency>("INR")
+
   return (
     <section id="pricing" className="py-6 md:py-12">
       <div className="mx-auto flex w-full max-w-7xl flex-col px-4 md:px-8">
@@ -62,6 +70,21 @@ export function Pricing() {
         <p className="mx-auto mt-4 max-w-md text-center text-sm text-muted-foreground md:text-base lg:text-lg">
           Choose a plan that works best for you and your team. No hidden fees.
         </p>
+        <div className="mt-6 flex justify-center">
+          <div className="flex rounded-full border p-1 text-sm">
+            {(["INR", "USD"] as const).map((c) => (
+              <button
+                key={c}
+                onClick={() => setCurrency(c)}
+                className={`rounded-full px-5 py-1.5 font-medium transition-colors ${
+                  currency === c ? "bg-foreground text-background" : "text-muted-foreground"
+                }`}
+              >
+                {c === "INR" ? "₹ INR" : "$ USD"}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="py-4 md:py-10">
           <div className="relative grid w-full grid-cols-1 gap-2 p-0 sm:gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3">
             {plans.map((plan) => (
@@ -91,14 +114,14 @@ export function Pricing() {
                   </p>
                   <div className="my-6">
                     <div className="flex items-end">
-                      {plan.price === "Custom" ? (
+                      {plan.price[currency] === "Custom" || plan.price[currency] === "Free" ? (
                         <span className="text-3xl font-medium text-card-foreground md:text-4xl">
-                          Custom
+                          {plan.price[currency]}
                         </span>
                       ) : (
                         <>
                           <span className="text-3xl font-medium text-card-foreground md:text-4xl">
-                            {plan.price}
+                            {plan.price[currency]}
                           </span>
                           <span className="mb-1 ml-1 text-sm text-muted-foreground">
                             /month

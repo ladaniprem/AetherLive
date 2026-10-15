@@ -23,10 +23,10 @@ import {
   FormControl,
   FormField,
   FormItem,
+  FormLabel,
   FormMessage,
 } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
-import { Label } from "@workspace/ui/components/label";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -117,7 +117,7 @@ const VapiPluginForm = ({
               name="publicApiKey"
               render={({ field }) => (
                 <FormItem>
-                  <Label>Public API key</Label>
+                  <FormLabel>Public API key</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
@@ -134,7 +134,7 @@ const VapiPluginForm = ({
               name="privateApiKey"
               render={({ field }) => (
                 <FormItem>
-                  <Label>Private API key</Label>
+                  <FormLabel>Private API key</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
